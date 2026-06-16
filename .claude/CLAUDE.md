@@ -75,12 +75,6 @@ La roadmap Notion prévoit aussi `POST /api/tyre-score` (DTO class-validator) po
 - **Frontend : UI quasi complète** — landing, dashboard, reco, garage/Tyre Score, alertes, avis, pairs. Stack riche : Radix UI + MUI + recharts + motion + react-router. Couleurs marque : bleu `#00205B`, jaune `#FCE500`. Données démo en dur en attendant l'API.
 - **Backend : scaffold NestJS nu** (`AppModule`/`AppController`/`AppService` seulement). Tout reste à faire.
 
-### À faire (roadmap Kanban Notion)
-- Backend : config ports/CORS/sessions/ValidationPipe ; `AuthModule` (Strava OAuth via Passport) ; `StravaModule` (activités) ; service `profiler` ; `RecommenderModule` ; `TyreScoreController` ; `tires.json` (catalogue pneus + scores).
-- Finalisation : déploiement Vercel (front) + Railway/Render (back) ; soutenance.
-
-> Recommandation : commencer par l'`AuthModule` (OAuth Strava) car tout le pipeline en dépend, puis `StravaModule` → `profiler` → `recommender`.
-
 ## Conventions / pièges
 
 - **pnpm partout** (back + front). pnpm v11 bloque par défaut les scripts de build natifs : ils sont autorisés explicitement via `allowBuilds` dans `pnpm-workspace.yaml` (front : `@tailwindcss/oxide`, `esbuild`). Ne pas committer de `package-lock.json`.

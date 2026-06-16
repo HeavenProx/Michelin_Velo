@@ -14,9 +14,12 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('health', () => {
+    it('should report the service as ok', () => {
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'michelin-road-intelligence-api',
+      });
     });
   });
 });
