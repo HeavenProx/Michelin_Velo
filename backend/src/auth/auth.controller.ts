@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Logger,
   Query,
   Req,
@@ -13,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthenticatedGuard } from './authenticated.guard';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
@@ -21,6 +24,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly config: ConfigService,
+    private readonly usersService: UsersService,
   ) {}
 
   private get frontendUrl(): string {
@@ -90,6 +94,30 @@ export class AuthController {
         profile: user.profile,
       },
     };
+  }
+
+  /** Supprime le compte et toutes les données associées, puis détruit la session. */
+  @Delete('account')
+  @HttpCode(200)
+  @UseGuards(AuthenticatedGuard)
+  deleteAccount(@Req() req: Request, @Res() res: Response): void {
+    const user = req.user;
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    this.usersService.delete(user.id).then(() => {
+      req.session.destroy((err) => {
+        if (err) {
+          this.logger.error('Erreur lors de la destruction de la session après suppression du compte', err);
+        }
+        res.clearCookie('connect.sid');
+        res.json({ success: true });
+      });
+    }).catch((err: unknown) => {
+      this.logger.error('Erreur lors de la suppression du compte', err);
+      res.status(500).json({ success: false, message: 'Erreur lors de la suppression du compte' });
+    });
   }
 
   /** Détruit la session et efface le cookie. */
