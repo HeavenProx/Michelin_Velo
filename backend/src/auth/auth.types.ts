@@ -28,12 +28,3 @@ export interface StravaTokenResponse {
   /** Présent uniquement lors de l'échange initial du code. */
   athlete?: StravaAthlete;
 }
-
-/** Ce qu'on stocke en session pour un utilisateur connecté. */
-export interface SessionUser {
-  athlete: StravaAthlete;
-  accessToken: string;
-  refreshToken: string;
-  /** Timestamp epoch (secondes) d'expiration de l'access token. */
-  expiresAt: number;
-}

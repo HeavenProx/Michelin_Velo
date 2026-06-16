@@ -1,11 +1,21 @@
+/// <reference types="jest" />
 import { ConfigService } from '@nestjs/config';
+import type { User } from '../users/user.entity';
+import type { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
-import type { SessionUser } from './auth.types';
 
 function makeConfig(values: Record<string, string>): ConfigService {
   return {
     get: (key: string) => values[key],
   } as unknown as ConfigService;
+}
+
+function makeUsersService(): jest.Mocked<UsersService> {
+  return {
+    findOrCreate: jest.fn(),
+    updateTokens: jest.fn(),
+    findByStravaId: jest.fn(),
+  } as unknown as jest.Mocked<UsersService>;
 }
 
 const ENV = {
@@ -15,10 +25,12 @@ const ENV = {
 };
 
 describe('AuthService', () => {
-  let service: AuthService;
+  let service!: AuthService;
+  let usersService!: jest.Mocked<UsersService>;
 
   beforeEach(() => {
-    service = new AuthService(makeConfig(ENV));
+    usersService = makeUsersService();
+    service = new AuthService(makeConfig(ENV), usersService);
   });
 
   afterEach(() => {
@@ -43,7 +55,7 @@ describe('AuthService', () => {
   });
 
   describe('exchangeCodeForToken', () => {
-    it('renvoie athlète + tokens depuis la réponse Strava', async () => {
+    it("persiste l'athlète en base et renvoie l'entité User", async () => {
       const tokenResponse = {
         token_type: 'Bearer',
         expires_at: 2000000000,
@@ -56,13 +68,21 @@ describe('AuthService', () => {
         ok: true,
         json: () => Promise.resolve(tokenResponse),
       } as Response);
+      const fakeUser = { stravaId: 7, accessToken: 'access-1' } as User;
+      usersService.findOrCreate.mockResolvedValue(fakeUser);
 
       const user = await service.exchangeCodeForToken('the-code');
 
-      expect(user.athlete.id).toBe(7);
-      expect(user.accessToken).toBe('access-1');
-      expect(user.refreshToken).toBe('refresh-1');
-      expect(user.expiresAt).toBe(2000000000);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(usersService.findOrCreate).toHaveBeenCalledWith(
+        tokenResponse.athlete,
+        {
+          accessToken: 'access-1',
+          refreshToken: 'refresh-1',
+          tokenExpiresAt: 2000000000,
+        },
+      );
+      expect(user).toBe(fakeUser);
     });
 
     it('lève si Strava répond une erreur HTTP', async () => {
@@ -79,12 +99,12 @@ describe('AuthService', () => {
   describe('getValidAccessToken', () => {
     it("renvoie le token courant s'il n'est pas expiré", async () => {
       const fetchSpy = jest.spyOn(global, 'fetch');
-      const user: SessionUser = {
-        athlete: { id: 1 } as SessionUser['athlete'],
+      const user = {
+        stravaId: 1,
         accessToken: 'still-good',
         refreshToken: 'r',
-        expiresAt: Math.floor(Date.now() / 1000) + 3600,
-      };
+        tokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+      } as User;
 
       await expect(service.getValidAccessToken(user)).resolves.toBe(
         'still-good',
@@ -92,7 +112,7 @@ describe('AuthService', () => {
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('rafraîchit et met à jour la session quand le token est expiré', async () => {
+    it('rafraîchit et met à jour la DB quand le token est expiré', async () => {
       jest.spyOn(global, 'fetch').mockResolvedValue({
         ok: true,
         json: () =>
@@ -104,20 +124,24 @@ describe('AuthService', () => {
             access_token: 'access-2',
           }),
       } as Response);
+      usersService.updateTokens.mockResolvedValue({} as User);
 
-      const user: SessionUser = {
-        athlete: { id: 1 } as SessionUser['athlete'],
+      const user = {
+        stravaId: 1,
         accessToken: 'expired',
         refreshToken: 'refresh-1',
-        expiresAt: Math.floor(Date.now() / 1000) - 10,
-      };
+        tokenExpiresAt: Math.floor(Date.now() / 1000) - 10,
+      } as User;
 
       const token = await service.getValidAccessToken(user);
 
       expect(token).toBe('access-2');
-      expect(user.accessToken).toBe('access-2');
-      expect(user.refreshToken).toBe('refresh-2');
-      expect(user.expiresAt).toBe(3000000000);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(usersService.updateTokens).toHaveBeenCalledWith(user, {
+        accessToken: 'access-2',
+        refreshToken: 'refresh-2',
+        tokenExpiresAt: 3000000000,
+      });
     });
   });
 });

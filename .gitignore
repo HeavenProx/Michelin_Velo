@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Base de données SQLite
+backend/data/*.db
+
 # Builds / artefacts
 dist/
 build/

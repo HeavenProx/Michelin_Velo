@@ -1,15 +1,16 @@
+/// <reference types="jest" />
 import { AuthService } from '../auth/auth.service';
-import type { SessionUser } from '../auth/auth.types';
+import type { User } from '../users/user.entity';
 import { StravaService } from './strava.service';
 import type { StravaSummaryActivityRaw } from './strava.types';
 
-function makeUser(): SessionUser {
+function makeUser(): User {
   return {
-    athlete: { id: 42 } as SessionUser['athlete'],
+    stravaId: 42,
     accessToken: 'token-123',
     refreshToken: 'r',
-    expiresAt: Math.floor(Date.now() / 1000) + 3600,
-  };
+    tokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+  } as User;
 }
 
 function rawActivity(
@@ -61,7 +62,7 @@ describe('StravaService', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('demande un token valide avant d’appeler Strava', async () => {
+  it("demande un token valide avant d'appeler Strava", async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(okJson([]));
     await service.getCyclingActivities(makeUser());
     expect(authService.getValidAccessToken).toHaveBeenCalledTimes(1);
@@ -110,7 +111,7 @@ describe('StravaService', () => {
     expect(activity.gearId).toBeNull();
   });
 
-  it('met start_latlng à null quand l’activité n’est pas géolocalisée', async () => {
+  it("met start_latlng à null quand l'activité n'est pas géolocalisée", async () => {
     jest
       .spyOn(global, 'fetch')
       .mockResolvedValue(okJson([rawActivity({ start_latlng: [] })]));
@@ -119,7 +120,7 @@ describe('StravaService', () => {
     expect(activity.startLatlng).toBeNull();
   });
 
-  it('pagine jusqu’à une page incomplète', async () => {
+  it("pagine jusqu'à une page incomplète", async () => {
     const fullPage = Array.from({ length: 200 }, (_, i) =>
       rawActivity({ id: i + 1 }),
     );

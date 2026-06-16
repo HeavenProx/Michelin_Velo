@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
-import type { SessionUser } from '../auth/auth.types';
+import type { User } from '../users/user.entity';
 import type { CyclingActivity, StravaSummaryActivityRaw } from './strava.types';
 
 const STRAVA_ACTIVITIES_URL =
@@ -41,7 +41,7 @@ export class StravaService {
    * Gère la pagination et rafraîchit le token si nécessaire.
    */
   async getCyclingActivities(
-    user: SessionUser,
+    user: User,
     options: GetActivitiesOptions = {},
   ): Promise<CyclingActivity[]> {
     const { sinceDays = 365, maxActivities = 400 } = options;
@@ -65,7 +65,7 @@ export class StravaService {
     }
 
     this.logger.debug(
-      `Athlète ${user.athlete.id} : ${cycling.length} activités vélo récupérées (fenêtre ${sinceDays} j).`,
+      `Athlète ${user.stravaId} : ${cycling.length} activités vélo récupérées (fenêtre ${sinceDays} j).`,
     );
     return cycling.slice(0, maxActivities);
   }

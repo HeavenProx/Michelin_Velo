@@ -20,11 +20,10 @@ export class StravaController {
   @Get('activities')
   @UseGuards(AuthenticatedGuard)
   async activities(@Req() req: Request) {
-    const user = req.session.user;
-    if (!user) {
+    if (!req.user) {
       throw new UnauthorizedException();
     }
-    const activities = await this.stravaService.getCyclingActivities(user);
+    const activities = await this.stravaService.getCyclingActivities(req.user);
     return { success: true, count: activities.length, activities };
   }
 }
