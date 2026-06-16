@@ -37,7 +37,7 @@ export class AuthController {
 
   /**
    * Callback Strava. Reçoit `?code=…&state=…` (succès) ou `?error=access_denied` (refus).
-   * Échange le code, stocke l'utilisateur en session, puis renvoie le front avec un statut.
+   * Échange le code, persiste l'utilisateur en DB, stocke son stravaId en session.
    */
   @Get('callback')
   async callback(
@@ -61,11 +61,12 @@ export class AuthController {
     }
 
     try {
-      req.session.user = await this.authService.exchangeCodeForToken(code);
-      this.logger.log(`Athlète connecté : ${req.session.user.athlete.id}`);
+      const user = await this.authService.exchangeCodeForToken(code);
+      req.session.stravaId = user.stravaId;
+      this.logger.log(`Athlète connecté : ${user.stravaId}`);
       return res.redirect(`${this.frontendUrl}/?auth=success`);
     } catch (err) {
-      this.logger.error('Échec de l’échange du code Strava', err as Error);
+      this.logger.error("Échec de l'échange du code Strava", err as Error);
       return res.redirect(`${this.frontendUrl}/?auth=error`);
     }
   }
@@ -74,12 +75,21 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthenticatedGuard)
   me(@Req() req: Request) {
-    // Le guard garantit la présence de session.user.
-    const user = req.session.user;
+    const user = req.user;
     if (!user) {
       throw new UnauthorizedException();
     }
-    return { success: true, athlete: user.athlete };
+    return {
+      success: true,
+      athlete: {
+        id: user.stravaId,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        city: user.city,
+        country: user.country,
+        profile: user.profile,
+      },
+    };
   }
 
   /** Détruit la session et efface le cookie. */

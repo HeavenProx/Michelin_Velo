@@ -1,6 +1,8 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { SessionUser, StravaTokenResponse } from './auth.types';
+import type { User } from '../users/user.entity';
+import { UsersService } from '../users/users.service';
+import type { StravaTokenResponse } from './auth.types';
 
 const STRAVA_AUTHORIZE_URL = 'https://www.strava.com/oauth/authorize';
 const STRAVA_TOKEN_URL = 'https://www.strava.com/api/v3/oauth/token';
@@ -15,7 +17,10 @@ const TOKEN_REFRESH_MARGIN_S = 60;
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly users: UsersService,
+  ) {
     if (!this.clientId || !this.clientSecret) {
       this.logger.warn(
         "STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET absents de .env — l'OAuth Strava échouera tant qu'ils ne sont pas renseignés (le reste de l'API fonctionne).",
@@ -51,8 +56,11 @@ export class AuthService {
     return `${STRAVA_AUTHORIZE_URL}?${params.toString()}`;
   }
 
-  /** Échange le `code` reçu au callback contre des tokens + l'athlète. */
-  async exchangeCodeForToken(code: string): Promise<SessionUser> {
+  /**
+   * Échange le `code` reçu au callback contre des tokens + l'athlète,
+   * puis persiste (ou met à jour) l'utilisateur en base.
+   */
+  async exchangeCodeForToken(code: string): Promise<User> {
     const data = await this.postToken({
       client_id: this.clientId,
       client_secret: this.clientSecret,
@@ -66,22 +74,20 @@ export class AuthService {
       );
     }
 
-    return {
-      athlete: data.athlete,
+    return this.users.findOrCreate(data.athlete, {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
-      expiresAt: data.expires_at,
-    };
+      tokenExpiresAt: data.expires_at,
+    });
   }
 
   /**
-   * Renvoie un access token valide pour l'utilisateur en session, en le
-   * rafraîchissant via le refresh token s'il est expiré (ou sur le point de l'être).
-   * Met à jour l'objet `user` en place (donc la session si on le persiste ensuite).
+   * Renvoie un access token valide, en rafraîchissant via le refresh token
+   * si le token est expiré (ou sur le point de l'être). Met à jour la DB si besoin.
    */
-  async getValidAccessToken(user: SessionUser): Promise<string> {
+  async getValidAccessToken(user: User): Promise<string> {
     const nowS = Math.floor(Date.now() / 1000);
-    if (user.expiresAt - nowS > TOKEN_REFRESH_MARGIN_S) {
+    if (user.tokenExpiresAt - nowS > TOKEN_REFRESH_MARGIN_S) {
       return user.accessToken;
     }
 
@@ -93,10 +99,13 @@ export class AuthService {
       refresh_token: user.refreshToken,
     });
 
-    user.accessToken = data.access_token;
-    user.refreshToken = data.refresh_token;
-    user.expiresAt = data.expires_at;
-    return user.accessToken;
+    await this.users.updateTokens(user, {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      tokenExpiresAt: data.expires_at,
+    });
+
+    return data.access_token;
   }
 
   /** Appel bas niveau de POST /oauth/token. */
