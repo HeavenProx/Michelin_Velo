@@ -66,6 +66,9 @@
     "tw-animate-css": "1.3.8",
     "vaul": "1.1.2"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@tailwindcss/oxide", "esbuild"]
+  },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
