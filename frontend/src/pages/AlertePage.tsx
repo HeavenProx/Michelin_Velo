@@ -51,7 +51,7 @@ export function AlertePage() {
 
                 {expanded && (
                   <div className="border-t border-gray-100">
-                    <StoreSection filterId={`ashadow${i}`} />
+                    <StoreSection />
                   </div>
                 )}
               </div>

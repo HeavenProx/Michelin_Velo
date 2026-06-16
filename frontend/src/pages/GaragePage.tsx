@@ -145,7 +145,7 @@ export function GaragePage() {
       {/* Section magasins */}
       {showStores && (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <StoreSection filterId="gshadow" />
+          <StoreSection />
         </div>
       )}
 

@@ -23,11 +23,25 @@ export const RECO = {
 };
 
 export const STORES = [
-  { name: "Le Cyclo — Grenoble",    address: "15 Rue Sébastien Faure, Grenoble",   distance: "3 km",   type: "physical" as const, pin: { x: 24, y: 61 }, label: "Le Cyclo"    },
-  { name: "Probikeshop Grenoble",   address: "40 Av. du Vercors, Grenoble",         distance: "5 km",   type: "physical" as const, pin: { x: 43, y: 71 }, label: "Probikeshop" },
-  { name: "Decathlon Pont-de-Claix", address: "ZAC Champbertier, Pont-de-Claix",   distance: "8 km",   type: "physical" as const, pin: { x: 66, y: 42 }, label: "Decathlon"   },
-  { name: "Alltricks.fr",            address: "Livraison 24-48h",                   distance: "En ligne", type: "online" as const },
-  { name: "Amazon.fr",               address: "Prime disponible",                   distance: "En ligne", type: "online" as const },
+  // Lyon
+  { name: "CycloPro Lyon Centre",     address: "12 Rue de la République, Lyon 2e",    distance: "1 km",    type: "physical" as const, coords: { lat: 45.7578, lng: 4.8320 } },
+  { name: "Probikeshop Lyon",         address: "141 Cours Gambetta, Lyon 3e",          distance: "3 km",    type: "physical" as const, coords: { lat: 45.7463, lng: 4.8562 } },
+  { name: "Decathlon Lyon Part-Dieu", address: "85 Bd Vivier Merle, Lyon 3e",          distance: "4 km",    type: "physical" as const, coords: { lat: 45.7589, lng: 4.8577 } },
+  // Grenoble
+  { name: "Le Cyclo — Grenoble",      address: "15 Rue Sébastien Faure, Grenoble",    distance: "106 km",  type: "physical" as const, coords: { lat: 45.1882, lng: 5.7359 } },
+  { name: "Probikeshop Grenoble",     address: "40 Av. du Vercors, Grenoble",          distance: "108 km",  type: "physical" as const, coords: { lat: 45.1540, lng: 5.6880 } },
+  { name: "Decathlon Pont-de-Claix",  address: "ZAC Champbertier, Pont-de-Claix",     distance: "112 km",  type: "physical" as const, coords: { lat: 45.1278, lng: 5.7010 } },
+  // Annecy
+  { name: "Intersport Annecy",        address: "12 Rue Jean Jaurès, Annecy",           distance: "138 km",  type: "physical" as const, coords: { lat: 45.8999, lng: 6.1292 } },
+  { name: "Decathlon Annecy-le-Vieux", address: "ZAC des Éparses, Annecy-le-Vieux",  distance: "142 km",  type: "physical" as const, coords: { lat: 45.9164, lng: 6.1484 } },
+  // Chambéry
+  { name: "Decathlon Chambéry",       address: "Bd de la Croix-Rouge, Chambéry",       distance: "98 km",   type: "physical" as const, coords: { lat: 45.5731, lng: 5.9159 } },
+  // Valence
+  { name: "Decathlon Valence",        address: "ZAC de Font Pré, Valence",              distance: "101 km",  type: "physical" as const, coords: { lat: 44.9284, lng: 4.8887 } },
+  // En ligne
+  { name: "Alltricks.fr",             address: "Livraison 24-48h",                      distance: "En ligne", type: "online" as const },
+  { name: "Amazon.fr",                address: "Prime disponible",                       distance: "En ligne", type: "online" as const },
+  { name: "Cdiscount.com",            address: "Livraison gratuite dès 25 €",            distance: "En ligne", type: "online" as const },
 ];
 
 export const TIRE_MODELS = [
