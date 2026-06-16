@@ -106,18 +106,27 @@ export class AuthController {
       throw new UnauthorizedException();
     }
 
-    this.usersService.delete(user.id).then(() => {
-      req.session.destroy((err) => {
-        if (err) {
-          this.logger.error('Erreur lors de la destruction de la session après suppression du compte', err);
-        }
-        res.clearCookie('connect.sid');
-        res.json({ success: true });
+    this.usersService
+      .delete(user.id)
+      .then(() => {
+        req.session.destroy((err) => {
+          if (err) {
+            this.logger.error(
+              'Erreur lors de la destruction de la session après suppression du compte',
+              err,
+            );
+          }
+          res.clearCookie('connect.sid');
+          res.json({ success: true });
+        });
+      })
+      .catch((err: unknown) => {
+        this.logger.error('Erreur lors de la suppression du compte', err);
+        res.status(500).json({
+          success: false,
+          message: 'Erreur lors de la suppression du compte',
+        });
       });
-    }).catch((err: unknown) => {
-      this.logger.error('Erreur lors de la suppression du compte', err);
-      res.status(500).json({ success: false, message: 'Erreur lors de la suppression du compte' });
-    });
   }
 
   /** Détruit la session et efface le cookie. */
