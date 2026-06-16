@@ -1,0 +1,15 @@
+#!/bin/sh
+# Bloque le commit si des fichiers TypeScript backend ne passent pas le lint
+
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACMR | grep "^backend/.*\.ts$")
+
+if [ -z "$STAGED_TS" ]; then
+  exit 0
+fi
+
+echo "Lint backend..."
+(cd backend && pnpm exec eslint "{src,apps,libs,test}/**/*.ts") || {
+  echo ""
+  echo "Lint échoué. Lance 'pnpm lint' dans backend/ pour corriger automatiquement."
+  exit 1
+}
