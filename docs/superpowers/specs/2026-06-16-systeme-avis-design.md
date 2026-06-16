@@ -79,8 +79,8 @@ est stubée et basculera plus tard sur le garage.
 | `id` | PK auto | — |
 | `userId` | int **nullable**, FK User (`onDelete: CASCADE`) | session (null pour les avis démo seedés) |
 | `tyreModelId` | int, FK TyreModel | choix du modèle |
-| `authorName` | text | **snapshot** : `firstname + " " + lastname[0] + "."` à l'écriture ; en dur pour les seeds |
-| `authorLocation` | text | **snapshot** : `city + ", " + state` à l'écriture ; en dur pour les seeds |
+| `authorName` | text | **fallback** : rempli en dur pour les seeds. Pour un vrai avis, voir résolution ci-dessous (le `User` prime). |
+| `authorLocation` | text | **fallback** : rempli en dur pour les seeds. Pour un vrai avis, voir résolution ci-dessous (le `User` prime). |
 | `rating` | int 1–5 | formulaire (note globale) |
 | `gripScore` | int 1–5 | critère grip |
 | `durabilityScore` | int 1–5 | critère durabilité |
@@ -93,8 +93,15 @@ est stubée et basculera plus tard sur le garage.
 | `verified` | bool | `kmAtReview >= SEUIL_VERIF` |
 | `createdAt` | timestamp (`@CreateDateColumn`) | auto |
 
-**Dénormalisation `authorName`/`authorLocation`** : snapshot stocké sur l'avis (pas de JOIN, gère
-seeds démo sans `User` réel et vrais avis de façon uniforme).
+**Résolution de l'auteur (le `User` prime)** : à la lecture, le nom et le lieu affichés sont calculés ainsi :
+
+1. **Si l'avis a un `userId` (utilisateur existant)** → on utilise **en priorité** les infos courantes du `User`
+   (`firstname + " " + lastname[0] + "."` et `city + ", " + state`). Les données utilisateur font foi.
+2. **Sinon (avis démo seedé, `userId = null`)** → on retombe sur les colonnes `authorName` / `authorLocation`
+   stockées en dur.
+
+Les colonnes dénormalisées servent donc de **fallback** (seeds, ou robustesse si un `User` est supprimé) ;
+elles ne masquent jamais les infos d'un utilisateur réel encore présent.
 
 **Unicité `(userId, tyreModelId)`** → upsert : re-soumettre sur le même pneu met à jour l'avis existant.
 NB : SQLite traite les `NULL` comme distincts dans une contrainte unique → plusieurs avis démo (`userId = null`)
@@ -109,12 +116,12 @@ Contrôleur `@Controller('api')` (cohérent avec `recommend`).
 | Route | Auth | Rôle |
 |---|---|---|
 | `GET /api/reviews?tire=<model>` | non (public) | Liste d'avis au shape front ci-dessus, filtrable par modèle. Tri par `createdAt` desc. |
-| `GET /api/reviews/eligibility?tire=<model>` | oui (`AuthenticatedGuard`) | `{ kmOnTire, threshold: 500, eligible }` → pilote le bloc CTA (« Vous avez parcouru X km… seuil 500 km »). |
+| `GET /api/reviews/eligibility?tire=<model>` | oui (`AuthenticatedGuard`) | `{ kmOnTire, threshold: 500, wouldBeVerified }` → alimente le bloc CTA (« Vous avez parcouru X km… »). Informe l'utilisateur si son avis sera vérifié ; **ne bloque pas** la soumission (gate mou). |
 | `POST /api/reviews` | oui (`AuthenticatedGuard`) | Soumet / upsert un avis. Calcule `mountDate`, `kmAtReview`, `totalKm`, `verified`, le snapshot auteur. Renvoie l'avis créé au shape front. |
 
 - **Lecture publique** (alimente la page démo et la landing sans auth).
 - `POST` corps validé par `CreateReviewDto` (`tyreModelId` ou nom de modèle, `rating` 1–5, 4 critères 1–5, `comment`).
-- **Gate dur** (cohérent avec le titre « Avis vérifiés » et le CTA « seuil requis pour laisser un avis ») : si `kmAtReview < SEUIL_VERIF`, le `POST` est **refusé** (HTTP 403) avec le km courant renvoyé. Conséquence : tout avis persisté est vérifié → `verified = true` pour tous les avis postés (et les seeds). La colonne `verified` est conservée pour la clarté du shape front et la robustesse future.
+- **Gate mou** (pas de refus) : l'avis est **toujours créé**, quel que soit le kilométrage. `verified = kmAtReview >= SEUIL_VERIF`. Un avis non vérifié est affiché normalement, sans badge (et le km parcouru visible sur la carte permet au lecteur de pondérer la crédibilité lui-même). Conséquence côté UI : la copie « seuil requis pour laisser un avis » devient « seuil pour un avis **vérifié** » — le seuil conditionne le **badge**, pas le droit de poster.
 
 ## Liste des fonctionnalités
 
@@ -132,8 +139,8 @@ Contrôleur `@Controller('api')` (cohérent avec `recommend`).
 
 **Vérification**
 - Calcul km-depuis-pose via Strava (`kmRiddenSince`).
-- Badge `verified` selon le seuil (500 km).
-- Endpoint d'éligibilité pour piloter l'affichage du CTA côté garage / page avis.
+- Badge `verified` selon le seuil (500 km) — **gate mou** : ne conditionne que le badge, pas le droit de poster.
+- Endpoint d'éligibilité (informe si l'avis sera vérifié) pour piloter l'affichage du CTA côté garage / page avis.
 
 **Plomberie / démo**
 - Entité `Review` + module enregistrés dans `app.module.ts`.
@@ -158,4 +165,5 @@ Contrôleur `@Controller('api')` (cohérent avec `recommend`).
 2. **Upsert** : un avis par `(user, modèle)`, re-soumission = mise à jour.
 3. **Lecture publique** des avis (sans auth).
 4. **Calcul Strava réel** dès maintenant (données déjà disponibles), pas de mock du calcul ; seule la source de la date est stubée.
-5. **Snapshot auteur** dénormalisé (`authorName`/`authorLocation`) pour gérer seeds et vrais avis uniformément.
+5. **Gate mou** : l'avis est toujours créé quel que soit le kilométrage ; le seuil 500 km ne conditionne que le badge `verified`. Un avis sous le seuil est affiché sans badge, à la crédibilité libre.
+6. **Résolution auteur** : si l'avis a un `userId`, les infos du `User` priment (calculées à la lecture) ; les colonnes `authorName`/`authorLocation` ne servent que de fallback (seeds `userId = null`, ou `User` supprimé).
