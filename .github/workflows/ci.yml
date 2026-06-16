@@ -79,14 +79,31 @@ jobs:
         run: pnpm build
 
   # ─────────────────────────────────────────
+  # Docker — build des images après CI verte
+  # ─────────────────────────────────────────
+  docker:
+    name: Docker — build images
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image backend
+        run: docker build -t michelin-backend:latest ./backend
+
+      - name: Build image frontend
+        run: docker build -t michelin-frontend:latest ./frontend
+
+  # ─────────────────────────────────────────
   # CD — Deploy sur le serveur (SSH)
   # Déclenché uniquement sur push vers main,
-  # et seulement si CI backend + frontend passent
+  # et seulement si les images Docker se construisent
   # ─────────────────────────────────────────
   deploy:
     name: Deploy → serveur
     if: github.event_name == 'push'
-    needs: [backend, frontend]
+    needs: [docker]
     runs-on: ubuntu-latest
     continue-on-error: true  # non bloquant tant que les secrets SSH ne sont pas configurés
 
