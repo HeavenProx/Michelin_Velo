@@ -279,114 +279,71 @@ function LandingScreen({
   onConnectStrava: () => void;
   onLoadDemo: () => void;
 }) {
-  const [showManual, setShowManual] = useState(false);
-  const [form, setForm] = useState({ km: "", terrain: "mixte", region: "" });
-
   return (
-    <div className="min-h-screen bg-[#00205B] flex flex-col font-sans">
-      <nav className="px-8 py-5 flex items-center justify-between">
-        <MichelinWordmark dark />
-        <span className="text-white/40 text-xs uppercase tracking-widest">Hackathon ESGI 2026</span>
-      </nav>
-
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="max-w-xl w-full text-center">
-          <div className="inline-flex items-center gap-2 bg-white/8 border border-white/15 rounded-full px-4 py-1.5 mb-10">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#FCE500] animate-pulse" />
-            <span className="text-white/70 text-xs tracking-wider font-medium uppercase">
-              Coach technique personnel
-            </span>
-          </div>
-
-          <h1 className="text-4xl md:text-5xl font-bold text-white leading-[1.15] mb-5">
-            Michelin connaît ses pneus<br />
-            <span className="text-[#FCE500]">mieux que quiconque.</span>
-          </h1>
-          <p className="text-white/55 text-base md:text-lg leading-relaxed mb-10 max-w-md mx-auto">
-            Il est temps que les cyclistes le ressentent. Connectez Strava et obtenez en 30 secondes
-            la recommandation pneu sur-mesure pour votre profil exact.
-          </p>
-
-          <div className="flex flex-col items-center gap-4">
-            <button
-              onClick={onConnectStrava}
-              className="w-full max-w-xs bg-[#FC4C02] hover:bg-[#e04302] text-white font-semibold py-4 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" aria-hidden="true">
-                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-              </svg>
-              Connecter Strava
-            </button>
-
-            <button
-              onClick={() => setShowManual((v) => !v)}
-              className="text-white/50 hover:text-white/80 text-sm underline underline-offset-4 transition-colors"
-            >
-              {showManual ? "Masquer la saisie manuelle" : "Continuer sans Strava →"}
-            </button>
-          </div>
-
-          {showManual && (
-            <div className="mt-6 bg-white/8 border border-white/15 rounded-2xl p-6 text-left max-w-xs mx-auto">
-              <p className="text-white/60 text-xs uppercase tracking-wider font-semibold mb-4">
-                Votre profil
-              </p>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-white/50 text-xs mb-1 block">Km / mois</label>
-                  <input
-                    type="number"
-                    placeholder="ex : 350"
-                    value={form.km}
-                    onChange={(e) => setForm((d) => ({ ...d, km: e.target.value }))}
-                    className="w-full bg-white/8 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-white/25 text-sm focus:outline-none focus:border-[#FCE500]/40 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-white/50 text-xs mb-1 block">Terrain principal</label>
-                  <select
-                    value={form.terrain}
-                    onChange={(e) => setForm((d) => ({ ...d, terrain: e.target.value }))}
-                    className="w-full bg-[#001840] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FCE500]/40 transition-colors"
-                  >
-                    <option value="route">Route</option>
-                    <option value="montagne">Montagne</option>
-                    <option value="mixte">Mixte</option>
-                    <option value="gravel">Gravel</option>
-                    <option value="vtt">VTT</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-white/50 text-xs mb-1 block">Région</label>
-                  <input
-                    type="text"
-                    placeholder="ex : Île-de-France"
-                    value={form.region}
-                    onChange={(e) => setForm((d) => ({ ...d, region: e.target.value }))}
-                    className="w-full bg-white/8 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-white/25 text-sm focus:outline-none focus:border-[#FCE500]/40 transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={onLoadDemo}
-                  className="w-full bg-[#FCE500] hover:bg-[#FDED44] active:bg-[#FCE500] text-black font-semibold py-2.5 px-6 rounded-xl text-sm transition-all mt-1"
-                >
-                  Générer mon profil →
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-[#00205B] flex flex-col items-center justify-center font-sans overflow-hidden relative px-6 py-10 sm:py-12">
+      {/* Cercles décoratifs — réduits sur mobile pour éviter tout croisement */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Groupe gauche — 38% hauteur */}
+        <div className="absolute rounded-full w-[220px] h-[220px] md:w-[600px] md:h-[600px] -left-[110px] md:-left-[300px]"
+             style={{ top: '38%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.05)' }} />
+        <div className="absolute rounded-full w-[320px] h-[320px] md:w-[820px] md:h-[820px] -left-[160px] md:-left-[410px]"
+             style={{ top: '38%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.05)' }} />
+        {/* Groupe droit — 62% hauteur */}
+        <div className="absolute rounded-full w-[220px] h-[220px] md:w-[600px] md:h-[600px] -right-[110px] md:-right-[300px]"
+             style={{ top: '62%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.05)' }} />
+        <div className="absolute rounded-full w-[320px] h-[320px] md:w-[820px] md:h-[820px] -right-[160px] md:-right-[410px]"
+             style={{ top: '62%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.05)' }} />
       </div>
 
-      <div className="border-t border-white/8 px-8 py-4">
-        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-white/30 text-xs">
-          <span>441 références catalogue</span>
-          <span className="hidden md:inline">·</span>
-          <span>Partenaire UCI Mountain Bike World Series</span>
-          <span className="hidden md:inline">·</span>
-          <span>5 000+ cyclistes analysés</span>
-        </div>
+      {/* Logo Michelin + titre appli */}
+      <div className="relative z-10 mb-7 sm:mb-8 flex flex-col items-center gap-2.5 sm:gap-3">
+        <img
+          src="/michelin-logo-white.png"
+          alt="Michelin"
+          className="w-48 sm:w-56"
+        />
+        <span className="text-white/55 text-[10px] sm:text-[11px] tracking-[0.28em] uppercase font-semibold">
+          Road Intelligence
+        </span>
       </div>
+
+      {/* Hero text */}
+      <div className="relative z-10 text-center mb-7 sm:mb-8">
+        <h1 className="text-white font-extrabold text-[2.05rem] sm:text-[2.20rem] leading-[1.18] mb-4 sm:mb-5">
+          Vos pneus.<br />
+          Vos données.<br />
+          Votre performance.
+        </h1>
+        <p className="text-white/65 text-[14px] sm:text-[15px] leading-relaxed mx-auto max-w-[22rem]">
+          Connectez votre compte Strava pour obtenir une recommandation personnalisée et suivre l&apos;usure de vos pneus Michelin.
+        </p>
+      </div>
+
+      {/* CTA */}
+      <div className="relative z-10 w-full max-w-sm mb-5 sm:mb-5">
+        <button
+          onClick={onConnectStrava}
+          className="w-full bg-[#FC4C02] hover:bg-[#e04302] active:scale-[0.98] text-white font-bold py-[14px] sm:py-4 px-6 rounded-2xl flex items-center justify-center gap-3 text-[15px] transition-all shadow-[0_8px_28px_rgba(252,76,2,0.55)]"
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white flex-shrink-0" aria-hidden="true">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+          </svg>
+          Se connecter avec Strava
+        </button>
+      </div>
+
+      {/* Legal */}
+      <p className="relative z-10 text-white/35 text-[11px] text-center px-6 leading-relaxed">
+        Données Strava utilisées uniquement pour personnaliser votre expérience. Application non commerciale.
+      </p>
+
+      {/* Accès démo discret pour le jury */}
+      <button
+        onClick={onLoadDemo}
+        className="relative z-10 text-white/20 hover:text-white/40 text-[11px] mt-3 sm:mt-6 transition-colors"
+      >
+        Mode démo
+      </button>
     </div>
   );
 }
