@@ -60,4 +60,8 @@ export class UsersService {
     user.tokenExpiresAt = tokens.tokenExpiresAt;
     return this.repo.save(user);
   }
+
+  async delete(id: number): Promise<void> {
+    await this.repo.delete(id);
+  }
 }
