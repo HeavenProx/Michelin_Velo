@@ -44,7 +44,10 @@ export class AuthService {
       client_id: this.clientId,
       redirect_uri: this.callbackUrl,
       response_type: 'code',
-      approval_prompt: 'auto',
+      // 'force' : Strava réaffiche toujours l'écran d'autorisation, même si
+      // l'app est déjà autorisée. Sinon l'aller-retour OAuth est invisible
+      // (redirection instantanée) et on a l'impression de ne pas passer par Strava.
+      approval_prompt: 'force',
       scope: STRAVA_SCOPES.join(','),
       state,
     });
