@@ -43,8 +43,8 @@ export function AvisPage() {
       {/* En-tête */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Avis vérifiés</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{REVIEWS.length} avis vérifiés</p>
+          <h1 className="text-2xl font-bold text-gray-900">Avis</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{reviews.length} avis</p>
         </div>
         <button
           onClick={() => setShowFilter((v) => !v)}
@@ -158,13 +158,13 @@ export function AvisPage() {
 
       {/* CTA laisser un avis */}
       <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
-        <p className="text-sm text-gray-600 mb-0.5">Vous avez parcouru 2 840 km sur vos {MY_TIRE}.</p>
-        <p className="text-xs text-gray-400 mb-4">Seuil requis pour laisser un avis : 500 km ✓</p>
+        <p className="text-sm text-gray-600 mb-0.5">Partagez votre expérience sur vos {MY_TIRE}.</p>
+        <p className="text-xs text-gray-400 mb-4">Votre avis aide la communauté.</p>
         <button
           onClick={() => setShowModal(true)}
           className="bg-[#00205B] text-white font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-[#27509B] transition-colors"
         >
-          Laisser un avis vérifié
+          Laisser un avis
         </button>
       </div>
 
