@@ -2,13 +2,14 @@
 
 **Date :** 2026-06-16
 **Statut :** validé en brainstorming, prêt pour plan d'implémentation
-**Périmètre choisi :** système complet avec avis vérifié (badge adossé aux km Strava réels)
+**Périmètre choisi :** système d'avis complet (lecture + soumission persistée), **sans** notion d'avis vérifié
 
 ## Objectif
 
 Brancher la page Avis du frontend (aujourd'hui 100 % données démo) sur un vrai backend :
-lecture des avis depuis la base, soumission persistée par l'utilisateur connecté, et
-**badge « avis vérifié »** adossé aux kilomètres Strava réels parcourus depuis la pose du pneu.
+lecture des avis depuis la base et soumission persistée par l'utilisateur connecté. Chaque avis
+affiche son **contexte kilométrique** (km parcourus sur le pneu au moment de l'avis, km total du
+cycliste), calculé depuis Strava — c'est ce contexte, et non un badge, qui éclaire la crédibilité.
 
 ## Contexte existant
 
@@ -24,7 +25,7 @@ lecture des avis depuis la base, soumission persistée par l'utilisateur connect
 
 ## Shape attendu par le front (à respecter)
 
-Un avis tel que consommé par `AvisPage` :
+Un avis tel que consommé par `AvisPage` (shape déjà présent dans `REVIEWS`, **inchangé**) :
 
 ```jsonc
 {
@@ -32,17 +33,17 @@ Un avis tel que consommé par `AvisPage` :
   "name": "Élodie M.",
   "location": "Annecy, Haute-Savoie",
   "tire": "Power All Season TLR",
-  "km": 2840,            // km au moment de l'avis
-  "totalKm": 8420,       // km total du cycliste
+  "km": 2840,            // km au moment de l'avis (contexte)
+  "totalKm": 8420,       // km total du cycliste (contexte)
   "rating": 5,           // note globale 1–5
   "text": "…",
   "date": "12 avril 2026",
-  "criteria": { "grip": 5, "durabilite": 4, "confort": 5, "anticrv": 5 },
-  "verified": true       // AJOUT — badge avis vérifié
+  "criteria": { "grip": 5, "durabilite": 4, "confort": 5, "anticrv": 5 }
 }
 ```
 
-Les agrégats par pneu (`count`, `avg`) restent **calculés côté front** à partir de la liste (code déjà présent dans `AvisPage`).
+Pas de champ `verified` : la notion d'avis vérifié est retirée. Les agrégats par pneu (`count`, `avg`)
+restent **calculés côté front** à partir de la liste (code déjà présent dans `AvisPage`).
 
 ## Architecture (back)
 
@@ -53,13 +54,13 @@ avis/
   review.entity.ts          # entité TypeORM Review
   avis.module.ts
   avis.controller.ts        # routes /api/reviews
-  avis.service.ts           # lecture, soumission (upsert), gate vérifié
+  avis.service.ts           # lecture, soumission (upsert), calcul du contexte km
   dto/create-review.dto.ts  # validation class-validator
 ```
 
 À enregistrer dans `app.module.ts` (entité `Review` dans le tableau `entities`, `AvisModule` dans `imports`).
 
-### Couture de vérification (point de jointure unique)
+### Couture km (point de jointure unique)
 
 Le calcul des km Strava vit côté Strava/Profile, **pas** dans le module avis :
 
@@ -88,9 +89,8 @@ est stubée et basculera plus tard sur le garage.
 | `punctureScore` | int 1–5 | critère anti-crevaison |
 | `comment` | text | formulaire |
 | `mountDate` | date | `resolveMountDate(...)` |
-| `kmAtReview` | int | **calculé** : `kmRiddenSince(userId, mountDate)` |
-| `totalKm` | int | **calculé** : km Strava total du cycliste |
-| `verified` | bool | `kmAtReview >= SEUIL_VERIF` |
+| `kmAtReview` | int | **calculé** : `kmRiddenSince(userId, mountDate)` — affiché « Avis après X km » |
+| `totalKm` | int | **calculé** : km Strava total du cycliste — affiché « Y km au total » |
 | `createdAt` | timestamp (`@CreateDateColumn`) | auto |
 
 **Résolution de l'auteur (le `User` prime)** : à la lecture, le nom et le lieu affichés sont calculés ainsi :
@@ -107,8 +107,6 @@ elles ne masquent jamais les infos d'un utilisateur réel encore présent.
 NB : SQLite traite les `NULL` comme distincts dans une contrainte unique → plusieurs avis démo (`userId = null`)
 sur le même modèle restent permis (le jeu démo a 4 avis sur « Power All Season TLR »).
 
-**Constante** : `SEUIL_VERIF = 500` (km).
-
 ## Routes API
 
 Contrôleur `@Controller('api')` (cohérent avec `recommend`).
@@ -116,42 +114,42 @@ Contrôleur `@Controller('api')` (cohérent avec `recommend`).
 | Route | Auth | Rôle |
 |---|---|---|
 | `GET /api/reviews?tire=<model>` | non (public) | Liste d'avis au shape front ci-dessus, filtrable par modèle. Tri par `createdAt` desc. |
-| `GET /api/reviews/eligibility?tire=<model>` | oui (`AuthenticatedGuard`) | `{ kmOnTire, threshold: 500, wouldBeVerified }` → alimente le bloc CTA (« Vous avez parcouru X km… »). Informe l'utilisateur si son avis sera vérifié ; **ne bloque pas** la soumission (gate mou). |
-| `POST /api/reviews` | oui (`AuthenticatedGuard`) | Soumet / upsert un avis. Calcule `mountDate`, `kmAtReview`, `totalKm`, `verified`, le snapshot auteur. Renvoie l'avis créé au shape front. |
+| `POST /api/reviews` | oui (`AuthenticatedGuard`) | Soumet / upsert un avis. Calcule `mountDate`, `kmAtReview`, `totalKm`, le snapshot auteur. Renvoie l'avis créé au shape front. **Aucun seuil, aucune condition de km : l'avis est toujours créé.** |
 
 - **Lecture publique** (alimente la page démo et la landing sans auth).
 - `POST` corps validé par `CreateReviewDto` (`tyreModelId` ou nom de modèle, `rating` 1–5, 4 critères 1–5, `comment`).
-- **Gate mou** (pas de refus) : l'avis est **toujours créé**, quel que soit le kilométrage. `verified = kmAtReview >= SEUIL_VERIF`. Un avis non vérifié est affiché normalement, sans badge (et le km parcouru visible sur la carte permet au lecteur de pondérer la crédibilité lui-même). Conséquence côté UI : la copie « seuil requis pour laisser un avis » devient « seuil pour un avis **vérifié** » — le seuil conditionne le **badge**, pas le droit de poster.
 
 ## Liste des fonctionnalités
 
 **Lecture**
 - Lister les avis, filtre par modèle + recherche (UI existante → branchée sur l'API).
 - Agrégats par pneu (nombre + note moyenne) — calculés côté front à partir de la liste.
-- Carte d'avis : auteur, lieu, modèle, km à l'avis, km total, note globale, 4 critères, texte, date, **badge vérifié**.
+- Carte d'avis : auteur, lieu, modèle, km à l'avis, km total, note globale, 4 critères, texte, date.
 
 **Écriture**
 - Soumission : note globale (requise) + 4 critères + commentaire, rattachée à un modèle de pneu.
-- Auth obligatoire (utilisateur Strava connecté).
+- Auth obligatoire (utilisateur Strava connecté), sans condition de kilométrage.
 - `mountDate` résolu côté back (stub aujourd'hui, garage demain) — **pas de champ date dans le modal**.
 - Upsert : un avis par `(user, modèle)` ; re-soumission = mise à jour.
 - Validation DTO (`rating` 1–5, critères 1–5, longueur commentaire, modèle existant).
 
-**Vérification**
-- Calcul km-depuis-pose via Strava (`kmRiddenSince`).
-- Badge `verified` selon le seuil (500 km) — **gate mou** : ne conditionne que le badge, pas le droit de poster.
-- Endpoint d'éligibilité (informe si l'avis sera vérifié) pour piloter l'affichage du CTA côté garage / page avis.
+**Contexte km (affichage, pas de gate)**
+- Calcul km-depuis-pose via Strava (`kmRiddenSince`) → `kmAtReview` stocké sur l'avis.
+- `totalKm` du cycliste, stocké sur l'avis.
+- Affichés tels quels sur la carte (« Avis après X km », « Y km au total ») pour éclairer la crédibilité.
 
 **Plomberie / démo**
 - Entité `Review` + module enregistrés dans `app.module.ts`.
-- Seed des 7 avis démo en base (`userId = null`, `authorName`/`authorLocation` en dur, `verified = true`),
+- Seed des 7 avis démo en base (`userId = null`, `authorName`/`authorLocation` en dur),
   via un script type `scripts/import-tyres.ts`, pour que la liste ne soit pas vide au jury.
 - Front :
   - Remplacer la lecture de `REVIEWS` (démo) par un `fetch('/api/reviews')` (fallback silencieux sur `REVIEWS` démo si échec — convention CLAUDE.md).
   - Brancher la soumission du `ReviewModal` sur `POST /api/reviews`.
+  - Retirer la copie « avis vérifiés » / « seuil requis » du CTA et du titre de page (plus de notion de vérification).
 
 ## Hors scope (YAGNI hackathon)
 
+- **Avis vérifié / badge / seuil** — retiré du périmètre.
 - Modération / signalement d'avis.
 - Votes « utile » / likes.
 - Photos.
@@ -161,9 +159,9 @@ Contrôleur `@Controller('api')` (cohérent avec `recommend`).
 
 ## Points tranchés en brainstorming
 
-1. **Date de pose** : stub `aujourd'hui − 90 j` côté back (pas de champ dans le modal) ; basculera sur le garage via `resolveMountDate` uniquement.
-2. **Upsert** : un avis par `(user, modèle)`, re-soumission = mise à jour.
-3. **Lecture publique** des avis (sans auth).
-4. **Calcul Strava réel** dès maintenant (données déjà disponibles), pas de mock du calcul ; seule la source de la date est stubée.
-5. **Gate mou** : l'avis est toujours créé quel que soit le kilométrage ; le seuil 500 km ne conditionne que le badge `verified`. Un avis sous le seuil est affiché sans badge, à la crédibilité libre.
+1. **Pas d'avis vérifié** : ni badge, ni seuil, ni gate. L'avis est toujours créé ; le contexte km affiché suffit à éclairer la crédibilité.
+2. **Date de pose** : stub `aujourd'hui − 90 j` côté back (pas de champ dans le modal) ; basculera sur le garage via `resolveMountDate` uniquement.
+3. **Upsert** : un avis par `(user, modèle)`, re-soumission = mise à jour.
+4. **Lecture publique** des avis (sans auth).
+5. **Calcul Strava réel** dès maintenant (données déjà disponibles) pour le contexte km ; seule la source de la date est stubée.
 6. **Résolution auteur** : si l'avis a un `userId`, les infos du `User` priment (calculées à la lecture) ; les colonnes `authorName`/`authorLocation` ne servent que de fallback (seeds `userId = null`, ou `User` supprimé).
