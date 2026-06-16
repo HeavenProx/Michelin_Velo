@@ -82,18 +82,28 @@ describe('ProfileService.getProfile', () => {
     repo.create.mockReturnValue({ userId: user.id });
     repo.save.mockResolvedValue({});
     strava.getCyclingActivities.mockResolvedValue([ride()]);
-    weather.getRainExposure.mockResolvedValue({ rain_percentage: 25, rainy_rides: 1 });
+    weather.getRainExposure.mockResolvedValue({
+      rain_percentage: 25,
+      rainy_rides: 1,
+    });
 
     const result = await service.getProfile(user);
 
     expect(strava.getCyclingActivities).toHaveBeenCalledWith(user);
     expect(result.ride_count).toBe(1);
     expect(result.region).toBe('Lyon, France');
-    expect(result.weather_exposure).toEqual({ rain_percentage: 25, rainy_rides: 1 });
+    expect(result.weather_exposure).toEqual({
+      rain_percentage: 25,
+      rainy_rides: 1,
+    });
     expect(repo.save).toHaveBeenCalledTimes(1);
-    const saved = repo.save.mock.calls[0][0];
+    const savedArgs = repo.save.mock.calls[0] as [
+      { computedAt: number; profile: string },
+    ];
+    const saved = savedArgs[0];
     expect(saved.computedAt).toBe(FIXED_NOW.getTime());
-    expect(JSON.parse(saved.profile).ride_count).toBe(1);
+    const persisted = JSON.parse(saved.profile) as { ride_count: number };
+    expect(persisted.ride_count).toBe(1);
   });
 
   it('recalcule quand le snapshot a dépassé le TTL', async () => {
@@ -104,7 +114,10 @@ describe('ProfileService.getProfile', () => {
     });
     repo.save.mockResolvedValue({});
     strava.getCyclingActivities.mockResolvedValue([ride()]);
-    weather.getRainExposure.mockResolvedValue({ rain_percentage: 0, rainy_rides: 0 });
+    weather.getRainExposure.mockResolvedValue({
+      rain_percentage: 0,
+      rainy_rides: 0,
+    });
 
     const result = await service.getProfile(user);
 
@@ -121,7 +134,10 @@ describe('ProfileService.getProfile', () => {
     });
     repo.save.mockResolvedValue({});
     strava.getCyclingActivities.mockResolvedValue([ride()]);
-    weather.getRainExposure.mockResolvedValue({ rain_percentage: 0, rainy_rides: 0 });
+    weather.getRainExposure.mockResolvedValue({
+      rain_percentage: 0,
+      rainy_rides: 0,
+    });
 
     const result = await service.getProfile(user, { refresh: true });
 

@@ -32,8 +32,13 @@ export class ProfileService {
    * snapshot est frais (< TTL) et qu'on ne force pas le refresh ; sinon,
    * recalcule depuis Strava + Open-Meteo et persiste le résultat.
    */
-  async getProfile(user: User, options: GetProfileOptions = {}): Promise<RiderProfile> {
-    const existing = await this.snapshots.findOne({ where: { userId: user.id } });
+  async getProfile(
+    user: User,
+    options: GetProfileOptions = {},
+  ): Promise<RiderProfile> {
+    const existing = await this.snapshots.findOne({
+      where: { userId: user.id },
+    });
 
     if (
       existing &&
