@@ -328,6 +328,24 @@ export class GarageService {
     return Math.max(0, Math.round(ms / (30.44 * 86_400_000)));
   }
 
+  /** Met à jour la date de pose d'un pneu monté appartenant à l'utilisateur. */
+  async updateMountDate(
+    user: User,
+    tyreId: number,
+    mountedDate: string,
+  ): Promise<{ success: true }> {
+    const tyre = await this.tyreRepo.findOne({
+      where: { id: tyreId, status: 'MOUNTED' },
+      relations: { bike: true },
+    });
+    if (!tyre || tyre.bike.userId !== user.id) {
+      throw new NotFoundException('Pneu introuvable.');
+    }
+    tyre.mountedDate = mountedDate;
+    await this.tyreRepo.save(tyre);
+    return { success: true };
+  }
+
   /** Jeu de démonstration (pas d'auth). */
   getDemoGarage(): GarageResponse {
     return {
@@ -335,7 +353,7 @@ export class GarageService {
       bikes: [
         {
           id: 1,
-          name: 'Specialized Tarmac',
+          name: 'Specialized Tarmac SL7',
           type: 'ROAD',
           strava_distance_km: 4200,
           tyres: [
@@ -354,7 +372,7 @@ export class GarageService {
               wear_percent: 21,
               status_label: 'Bon état',
               explanation:
-                "Pneu avant : l'usure tient compte de la charge et de votre terrain.",
+                "Pneu avant : l'usure tient compte de la charge et de votre terrain. Style Performance pris en compte.",
             },
             {
               id: 2,
@@ -371,7 +389,91 @@ export class GarageService {
               wear_percent: 40,
               status_label: 'Bon état',
               explanation:
-                "Pneu arrière : l'usure tient compte de la charge et de votre terrain.",
+                "Pneu arrière : l'usure tient compte de la charge et de votre terrain. Style Performance pris en compte.",
+            },
+          ],
+        },
+        {
+          id: 2,
+          name: 'Canyon Grail CF SL',
+          type: 'GRAVEL',
+          strava_distance_km: 1870,
+          tyres: [
+            {
+              id: 3,
+              position: 'FRONT',
+              model: {
+                name: 'POWER GRAVEL',
+                lifetime_km: 5000,
+                price_range: '48 – 62 €',
+              },
+              mounted_date: '2025-11-01',
+              km_used: 820,
+              km_max_adjusted: 5000,
+              km_left: 4180,
+              wear_percent: 16,
+              status_label: 'Bon état',
+              explanation:
+                'Pneu avant gravel : coefficient terrain mixte appliqué. Vos sorties hors-asphalte sont bien prises en compte.',
+            },
+            {
+              id: 4,
+              position: 'REAR',
+              model: {
+                name: 'POWER GRAVEL',
+                lifetime_km: 5000,
+                price_range: '48 – 62 €',
+              },
+              mounted_date: '2025-06-10',
+              km_used: 3480,
+              km_max_adjusted: 3570,
+              km_left: 90,
+              wear_percent: 97,
+              status_label: 'À remplacer',
+              explanation:
+                "Pneu arrière gravel : usure critique. L'arrière s'use 1,9× plus vite, et le terrain gravel accélère l'abrasion. Remplacement urgent.",
+            },
+          ],
+        },
+        {
+          id: 3,
+          name: 'Trek Marlin 7',
+          type: 'MTB',
+          strava_distance_km: 640,
+          tyres: [
+            {
+              id: 5,
+              position: 'FRONT',
+              model: {
+                name: 'WILD ENDURO FRONT',
+                lifetime_km: 3500,
+                price_range: '55 – 72 €',
+              },
+              mounted_date: '2026-02-20',
+              km_used: 290,
+              km_max_adjusted: 3500,
+              km_left: 3210,
+              wear_percent: 8,
+              status_label: 'Neuf',
+              explanation:
+                "Pneu avant VTT : très récent, l'usure est minimale. Le compound accrocheur est encore en rodage.",
+            },
+            {
+              id: 6,
+              position: 'REAR',
+              model: {
+                name: 'WILD ENDURO REAR',
+                lifetime_km: 2500,
+                price_range: '58 – 75 €',
+              },
+              mounted_date: '2026-02-20',
+              km_used: 290,
+              km_max_adjusted: 1650,
+              km_left: 1360,
+              wear_percent: 18,
+              status_label: 'Bon état',
+              explanation:
+                "Pneu arrière VTT spécifique : conçu pour encaisser les chocs en sortie de virage. Usure homogène pour l'instant.",
             },
           ],
         },

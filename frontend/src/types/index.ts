@@ -11,6 +11,7 @@ export interface LiveProfile {
   ride_count: number;
   total_distance_km: number;
   monthly_distance: number;
+  monthly_elevation_m?: number;
   avg_speed_kmh: number;
   avg_elevation_m: number;
   terrain_label: string;
@@ -25,6 +26,7 @@ export interface LiveReco {
     name: string;
     match_score: number;
     description: string;
+    features?: string[];
     lifetime_km: number;
     price_range: string;
     scores: {
@@ -63,4 +65,30 @@ export interface Review {
   text: string;
   date: string;
   criteria: { grip: number; durabilite: number; confort: number; anticrv: number };
+}
+
+export interface GarageTyre {
+  id: number;
+  position: "FRONT" | "REAR";
+  model: { name: string; lifetime_km: number; price_range: string };
+  mounted_date: string;
+  km_used: number;
+  km_max_adjusted: number;
+  km_left: number;
+  wear_percent: number;
+  status_label: string;
+  explanation: string;
+}
+
+export interface GarageBike {
+  id: number;
+  name: string;
+  type: "ROAD" | "GRAVEL" | "MTB" | "E-BIKE";
+  strava_distance_km: number;
+  tyres: GarageTyre[];
+}
+
+export interface GarageData {
+  success: true;
+  bikes: GarageBike[];
 }

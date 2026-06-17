@@ -48,6 +48,20 @@ export function monthlyDistance(
   return Math.round(total / monthsCovered);
 }
 
+export function monthlyElevationM(
+  activities: CyclingActivity[],
+  now: Date,
+): number {
+  if (activities.length === 0) return 0;
+  const total = activities.reduce((acc, a) => acc + a.totalElevationGainM, 0);
+  const firstMs = Math.min(
+    ...activities.map((a) => new Date(a.startDate).getTime()),
+  );
+  const days = (now.getTime() - firstMs) / MS_PER_DAY;
+  const monthsCovered = Math.max(1, Math.ceil(days / 30));
+  return Math.round(total / monthsCovered);
+}
+
 /** Densité de grimpe = dénivelé total / distance totale (m/km). */
 export function terrainLabel(activities: CyclingActivity[]): string {
   const dist = activities.reduce((acc, a) => acc + a.distanceKm, 0);
@@ -112,6 +126,7 @@ export function computeProfileStats(
       ride_count: 0,
       total_distance_km: 0,
       monthly_distance: 0,
+      monthly_elevation_m: 0,
       avg_speed_kmh: 0,
       avg_elevation_m: 0,
       terrain_label: NEUTRAL_LABEL,
@@ -124,6 +139,7 @@ export function computeProfileStats(
     ride_count: rideCount(activities),
     total_distance_km: totalDistanceKm(activities),
     monthly_distance: monthlyDistance(activities, now),
+    monthly_elevation_m: monthlyElevationM(activities, now),
     avg_speed_kmh: avgSpeedKmh(activities),
     avg_elevation_m: avgElevationM(activities),
     terrain_label: terrainLabel(activities),

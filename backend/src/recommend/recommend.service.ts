@@ -21,6 +21,7 @@ const DEMO_RECO: RecoResponse = {
     ride_count: 48,
     total_distance_km: 2340,
     monthly_distance: 195,
+    monthly_elevation_m: 4200,
     avg_speed_kmh: 27.4,
     avg_elevation_m: 312,
     terrain_label: 'Mixte',
@@ -34,6 +35,11 @@ const DEMO_RECO: RecoResponse = {
     name: 'POWER ROAD',
     match_score: 87,
     description: 'Endurance — all road',
+    features: [
+      'Faible résistance au roulement',
+      'Durabilité éprouvée sur asphalte',
+      'Profil équilibré performance / confort',
+    ],
     lifetime_km: 8000,
     price_range: '45 – 58 €',
     scores: {
@@ -95,6 +101,7 @@ export class RecommendService {
         name: best.model.modelName,
         match_score: best.score,
         description: this.generateDescription(best.model),
+        features: this.generateFeatures(best.model),
         lifetime_km: best.model.lifetimeKm,
         price_range: best.model.priceRange ?? 'N/C',
         scores: {
@@ -236,6 +243,50 @@ export class RecommendService {
     }
 
     return parts.join(' ');
+  }
+
+  private generateFeatures(model: TyreModel): string[] {
+    const features: string[] = [];
+    const name = model.modelName.toUpperCase();
+    const rubber = (model.rubberTechnologies ?? '').toUpperCase();
+    const casing = (model.casingTechnologies ?? '').toUpperCase();
+    const tread = (model.treadTechnologies ?? '').toUpperCase();
+
+    if (rubber.includes('GUM-X')) features.push('Compound GUM-X haute performance');
+    else if (rubber.includes('MAGI-X')) features.push('Compound MAGI-X longue durée');
+
+    if (casing.includes('BEAD TO BEAD SHIELD')) features.push('Protection Bead to Bead Shield');
+    else if (casing.includes('ARAMID SHIELD')) features.push('Renfort anti-crevaison Aramid Shield');
+    else if (casing.includes('TUBELESS SHIELD')) features.push('Bouclier Tubeless Shield');
+    else if (casing.includes('HI-DENSITY SHIELD')) features.push('Bouclier Hi-Density Shield');
+
+    if (tread.includes('HI-GRIP DESIGN')) features.push('Sculpture Hi-Grip Design');
+    else if (tread.includes('GRIP DESIGN')) features.push('Sculpture Grip Design');
+
+    if (
+      model.sealing?.toUpperCase() === 'TUBELESS READY' ||
+      name.includes('TLR')
+    ) {
+      features.push('Montage sans chambre (TLR)');
+    }
+
+    if (name.includes('ALL SEASON') || name.includes('4S'))
+      features.push('Certification toutes saisons');
+    if (name.includes('GRAVEL')) features.push('Polyvalence route et gravel');
+
+    if (features.length < 2) {
+      if (model.scoreWetGrip >= 4) features.push('Accroche optimale par temps humide');
+      if (model.scoreRollingResistance >= 4) features.push('Faible résistance au roulement');
+      if (model.scoreDurability >= 4) features.push('Durabilité renforcée');
+      if (model.scoreTerrainVersatility >= 4) features.push('Polyvalence terrain confirmée');
+    }
+
+    if (features.length === 0) {
+      features.push('Pneu Michelin haute performance');
+      features.push(`Durée de vie estimée ${model.lifetimeKm.toLocaleString('fr-FR')} km`);
+    }
+
+    return features.slice(0, 3);
   }
 
   private generateDescription(model: TyreModel): string {

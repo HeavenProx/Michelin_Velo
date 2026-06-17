@@ -51,7 +51,7 @@ export function AvisPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Avis</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{reviews.length} avis</p>
+          <p className="text-sm text-gray-400 mt-0.5">{filtered.length} avis{filter !== "Tous" && ` · ${filter}`}</p>
         </div>
         <button
           onClick={() => setShowFilter((v) => !v)}
@@ -72,6 +72,7 @@ export function AvisPage() {
         N&apos;hésitez pas à appliquer un filtre si vous souhaitez consulter les
         avis sur d&apos;autres pneus.
       </p>
+
 
       {/* Panneau filtre */}
       {showFilter && (

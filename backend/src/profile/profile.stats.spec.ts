@@ -205,6 +205,7 @@ describe('computeProfileStats', () => {
       ride_count: 0,
       total_distance_km: 0,
       monthly_distance: 0,
+      monthly_elevation_m: 0,
       avg_speed_kmh: 0,
       avg_elevation_m: 0,
       terrain_label: 'Données insuffisantes',
