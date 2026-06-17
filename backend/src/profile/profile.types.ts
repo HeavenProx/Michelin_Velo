@@ -12,6 +12,7 @@ export interface RiderProfile {
   ride_count: number;
   total_distance_km: number;
   monthly_distance: number;
+  monthly_elevation_m: number;
   avg_speed_kmh: number;
   avg_elevation_m: number;
   terrain_label: string;

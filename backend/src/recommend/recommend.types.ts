@@ -25,6 +25,7 @@ export interface RecoResponse {
     name: string;
     match_score: number;
     description: string;
+    features: string[];
     lifetime_km: number;
     price_range: string;
     scores: RecoScores;

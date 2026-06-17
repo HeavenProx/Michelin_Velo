@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate } from "react-router";
 import {
   Bike,
   MapPin,
@@ -17,35 +18,39 @@ import { useApp } from "@/context/AppContext";
 import { StarRating } from "@/components/StarRating";
 import { StoreSection } from "@/components/StoreSection";
 import { usePeers } from "@/hooks/usePeers";
-import { RIDER, RECO } from "@/data/demo";
 
 export function DashboardPage() {
   const { liveData } = useApp();
   const { data: peers } = usePeers();
   const [showStores, setShowStores] = useState(false);
 
-  const name = liveData
-    ? `${liveData.athlete.firstname} ${liveData.athlete.lastname}`
-    : RIDER.name;
+  if (!liveData) return <Navigate to="/" replace />;
+
+  const name = `${liveData.athlete.firstname} ${liveData.athlete.lastname}`;
   const initials = name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const location = liveData?.athlete.city
+  const location = liveData.athlete.city
     ? `${liveData.athlete.city}, France`
-    : RIDER.location;
-  const monthlyKm = liveData?.profile.monthly_distance ?? RIDER.monthlyKm;
-  const totalRides = liveData?.profile.ride_count ?? RIDER.rides;
-  const recoModel = liveData?.reco.recommended.name ?? RECO.model;
-  const recoDesc = liveData?.reco.explanation ?? RECO.shortDescription;
+    : liveData.profile.region;
+  const monthlyKm = liveData.profile.monthly_distance;
+  const monthlyElevation = liveData.profile.monthly_elevation_m ?? 0;
+  const totalRides = liveData.profile.ride_count;
+  const recoModel = liveData.reco.recommended.name;
+  const recoDesc = liveData.reco.explanation;
+  const recoFeatures = liveData.reco.recommended.features ?? [];
+
+  const rainPct = liveData.profile.weather_exposure.rain_percentage;
+  const dryPct = Math.round(100 - rainPct);
 
   const profileTags = [
-    { id: "terrain", Icon: Mountain, label: liveData?.profile.terrain_label ?? "Montagne" },
-    { id: "style",   Icon: Zap,      label: liveData?.profile.style_label ?? RIDER.style },
-    { id: "wet",     Icon: Droplets, label: `${liveData?.profile.weather_exposure.rain_percentage ?? RIDER.weather.wet}% humide` },
-    { id: "dry",     Icon: Sun,      label: `${RIDER.weather.dry}% sèche` },
+    { id: "terrain", Icon: Mountain, label: liveData.profile.terrain_label },
+    { id: "style",   Icon: Zap,      label: liveData.profile.style_label },
+    { id: "wet",     Icon: Droplets, label: `${rainPct}% humide` },
+    { id: "dry",     Icon: Sun,      label: `${dryPct}% sèche` },
   ];
 
   return (
@@ -89,7 +94,7 @@ export function DashboardPage() {
             { Icon: Bike, value: String(monthlyKm), unit: "km ce mois" },
             {
               Icon: TrendingUp,
-              value: `${(RIDER.monthlyElevation / 1000).toFixed(1)}km`,
+              value: `${(monthlyElevation / 1000).toFixed(1)}km`,
               unit: "Dénivelé positif ce mois",
             },
           ].map(({ Icon, value, unit }) => (
@@ -148,7 +153,7 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="space-y-2.5 mb-5">
-              {RECO.features.map((f) => (
+              {recoFeatures.map((f) => (
                 <div key={f} className="flex items-center gap-2">
                   <CheckCircle
                     size={16}
