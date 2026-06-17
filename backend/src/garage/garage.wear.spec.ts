@@ -35,6 +35,9 @@ describe('terrainCoeff', () => {
     expect(terrainCoeff(act({ sportType: 'GravelRide' }))).toBe(1.4);
     expect(terrainCoeff(act({ sportType: 'MountainBikeRide' }))).toBe(1.4);
   });
+  it('vaut 1.4 pour EMountainBikeRide', () => {
+    expect(terrainCoeff(act({ sportType: 'EMountainBikeRide' }))).toBe(1.4);
+  });
 });
 
 describe('statusLabel', () => {
@@ -43,12 +46,18 @@ describe('statusLabel', () => {
     expect(statusLabel(60)).toBe('À surveiller');
     expect(statusLabel(85)).toBe('À remplacer');
   });
+  it('respecte les bornes exactes', () => {
+    expect(statusLabel(54)).toBe('Bon état');
+    expect(statusLabel(55)).toBe('À surveiller');
+    expect(statusLabel(79)).toBe('À surveiller');
+    expect(statusLabel(80)).toBe('À remplacer');
+  });
 });
 
 describe('computeTyreScore', () => {
   const now = new Date('2025-10-01T00:00:00Z');
 
-  it('use plus vite à l’arrière (kmMax ajusté plus bas)', () => {
+  it("use plus vite à l'arrière (kmMax ajusté plus bas)", () => {
     const acts = [act({ distanceKm: 1000, sportType: 'Ride' })];
     const front = computeTyreScore(acts, 'FRONT', 5000, '2025-08-01', now);
     const rear = computeTyreScore(acts, 'REAR', 5000, '2025-08-01', now);
@@ -68,10 +77,19 @@ describe('computeTyreScore', () => {
     expect(score.kmUsed).toBe(500);
   });
 
-  it('plafonne l’usure à 100%', () => {
+  it("plafonne l'usure à 100%", () => {
     const acts = [act({ distanceKm: 10000 })];
     const score = computeTyreScore(acts, 'FRONT', 5000, '2025-08-01', now);
     expect(score.wearPercent).toBe(100);
+    expect(score.kmLeft).toBe(0);
+  });
+
+  it('renvoie une usure nulle (pas NaN) si lifetimeKm <= 0', () => {
+    const acts = [act({ distanceKm: 500 })];
+    const score = computeTyreScore(acts, 'FRONT', 0, '2025-08-01', now);
+    expect(score.kmUsed).toBe(500);
+    expect(score.kmMaxAdjusted).toBe(0);
+    expect(score.wearPercent).toBe(0);
     expect(score.kmLeft).toBe(0);
   });
 });

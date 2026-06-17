@@ -58,6 +58,17 @@ export function computeTyreScore(
   );
   const coeffTerrainMoyen = kmUsed > 0 ? round2(weightedKm / kmUsed) : 1.0;
 
+  if (lifetimeKm <= 0) {
+    return {
+      kmUsed,
+      kmMaxAdjusted: 0,
+      kmLeft: 0,
+      wearPercent: 0,
+      statusLabel: statusLabel(0),
+      coeffTerrainMoyen,
+    };
+  }
+
   const kmMaxAdjusted = Math.round(
     lifetimeKm / (POSITION_COEFF[position] * coeffTerrainMoyen),
   );
