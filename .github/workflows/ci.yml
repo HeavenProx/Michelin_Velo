@@ -138,4 +138,13 @@ jobs:
 
     steps:
       - name: Déclencher le redéploiement Dokploy
-        run: curl -fsSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
+        run: |
+          HTTP=$(curl -sS -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -o response.txt -w "%{http_code}")
+          echo "Code HTTP : $HTTP"
+          echo "Réponse Dokploy : $(cat response.txt)"
+          if [ "$HTTP" -ge 400 ]; then
+            echo "::error::Webhook Dokploy a renvoyé $HTTP — vérifier le secret DOKPLOY_WEBHOOK_URL"
+            exit 1
+          fi
