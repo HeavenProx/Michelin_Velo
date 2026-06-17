@@ -7,6 +7,7 @@ import { GarageTyre } from './garage-tyre.entity';
 import type { TyreModel } from '../tyres/tyre-model.entity';
 import { GarageService } from './garage.service';
 import type { CyclingActivity } from '../strava/strava.types';
+import { NotFoundException } from '@nestjs/common';
 
 const user = { id: 7 } as User;
 
@@ -137,5 +138,53 @@ describe('GarageService.syncBikes', () => {
     expect(result).toHaveLength(2);
     expect(saved.find((b) => b.stravaGearId === 'b1')?.name).toBe('Tarmac');
     expect(saved.find((b) => b.stravaGearId === 'b2')?.name).toBe('Checkpoint');
+  });
+});
+
+describe('GarageService.setTyre', () => {
+  const dto = {
+    bikeId: 1,
+    position: 'FRONT' as const,
+    modelGlobalId: 'g-power-road',
+    mountedDate: '2025-08-15',
+  };
+
+  it("crée un pneu monté quand aucun n'existe à cette position", async () => {
+    const saved: GarageTyre[] = [];
+    const service = makeService({
+      bikeRepo: {
+        findOne: jest
+          .fn()
+          .mockResolvedValue(Object.assign(new Bike(), { id: 1, userId: 7 })),
+      },
+      modelRepo: {
+        findOne: jest
+          .fn()
+          .mockResolvedValue({ id: 99, modelName: 'POWER ROAD' }),
+      },
+      tyreRepo: {
+        findOne: jest.fn().mockResolvedValue(null),
+        create: jest.fn((d) => Object.assign(new GarageTyre(), d)),
+        save: jest.fn((t) => {
+          saved.push(t as GarageTyre);
+          return Promise.resolve(t);
+        }),
+      },
+    });
+
+    await service.setTyre(user, dto);
+
+    expect(saved[0].bikeId).toBe(1);
+    expect(saved[0].tyreModelId).toBe(99);
+    expect(saved[0].status).toBe('MOUNTED');
+  });
+
+  it("rejette un vélo qui n'appartient pas à l'utilisateur", async () => {
+    const service = makeService({
+      bikeRepo: { findOne: jest.fn().mockResolvedValue(null) },
+    });
+    await expect(service.setTyre(user, dto)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

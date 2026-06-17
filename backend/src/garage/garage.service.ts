@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProfileService } from '../profile/profile.service';
@@ -11,6 +11,7 @@ import type { CyclingActivity } from '../strava/strava.types';
 import type { RiderProfile } from '../profile/profile.types';
 import { computeTyreScore, type TyreScore } from './garage.wear';
 import type { TyrePosition } from './garage-tyre.entity';
+import { SetTyreDto } from './dto/set-tyre.dto';
 
 export interface TyreDto {
   id: number;
@@ -193,6 +194,34 @@ export class GarageService {
       );
     }
     return parts.join(' ');
+  }
+
+  /** Assigne ou met à jour le pneu monté à (vélo, position). */
+  async setTyre(user: User, dto: SetTyreDto): Promise<GarageTyre> {
+    const bike = await this.bikeRepo.findOne({
+      where: { id: dto.bikeId, userId: user.id },
+    });
+    if (!bike) throw new NotFoundException('Vélo introuvable.');
+
+    const model = await this.modelRepo.findOne({
+      where: { globalId: dto.modelGlobalId },
+    });
+    if (!model) throw new NotFoundException('Modèle de pneu introuvable.');
+
+    const existing = await this.tyreRepo.findOne({
+      where: { bikeId: bike.id, position: dto.position, status: 'MOUNTED' },
+    });
+
+    const tyre =
+      existing ??
+      this.tyreRepo.create({
+        bikeId: bike.id,
+        position: dto.position,
+        status: 'MOUNTED',
+      });
+    tyre.tyreModelId = model.id;
+    tyre.mountedDate = dto.mountedDate;
+    return this.tyreRepo.save(tyre);
   }
 
   /** Jeu de démonstration (pas d'auth). */
