@@ -1,4 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    // Dans dist/ pour que `deleteOutDir` le purge : sinon le build incrémental
+    // saute l'émission après un `rm -rf dist` (dist vide, aucun main.js).
+    "tsBuildInfoFile": "dist/tsconfig.build.tsbuildinfo"
+  },
+  "exclude": ["node_modules", "test", "dist", "scripts", "**/*spec.ts"]
 }
