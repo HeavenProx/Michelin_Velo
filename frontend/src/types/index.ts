@@ -43,3 +43,11 @@ export interface LiveData {
   reco: LiveReco;
   isDemo?: boolean;
 }
+
+export interface WearAlert {
+  id: string;
+  tire: string;
+  wear: number;
+  date: string;
+  dismissed: boolean;
+}
