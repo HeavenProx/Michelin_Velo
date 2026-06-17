@@ -95,6 +95,120 @@ describe('GarageService.getGarage', () => {
   });
 });
 
+describe('GarageService.getGarage — dérivation du type de vélo', () => {
+  it('dérive le type GRAVEL si activités majoritairement gravel', async () => {
+    const bike = Object.assign(new Bike(), {
+      id: 1,
+      userId: 7,
+      stravaGearId: 'b1',
+      name: 'Checkpoint',
+      type: 'ROAD',
+      stravaDistanceKm: 800,
+      lastSyncedAt: Date.now(),
+    });
+    const tyre = Object.assign(new GarageTyre(), {
+      id: 10,
+      bikeId: 1,
+      position: 'FRONT',
+      mountedDate: '2025-08-01',
+      status: 'MOUNTED',
+      tyreModel: {
+        modelName: 'POWER GRAVEL',
+        lifetimeKm: 6000,
+        priceRange: '50 – 65 €',
+      },
+    });
+    const gravelActivity = (n: number): CyclingActivity =>
+      ({
+        sportType: 'GravelRide',
+        distanceKm: 40,
+        startDate: `2025-09-0${n}T08:00:00Z`,
+        trainer: false,
+        manual: false,
+        gearId: 'b1',
+      }) as CyclingActivity;
+
+    const bikeRepoSave = jest
+      .fn()
+      .mockImplementation((b) => Promise.resolve(b));
+    const service = makeService({
+      bikeRepo: {
+        find: jest.fn().mockResolvedValue([bike]),
+        create: jest.fn((d) => Object.assign(new Bike(), d)),
+        save: bikeRepoSave,
+      },
+      tyreRepo: { find: jest.fn().mockResolvedValue([tyre]) },
+      strava: {
+        getAthleteBikes: jest.fn().mockResolvedValue([]),
+        getCyclingActivities: jest
+          .fn()
+          .mockResolvedValue([gravelActivity(1), gravelActivity(2)]),
+      },
+      profile: {
+        getProfile: jest.fn().mockResolvedValue({
+          style_label: 'Aventure',
+          weather_exposure: { rain_percentage: 10, rainy_rides: 1 },
+        }),
+      },
+    });
+
+    const garage = await service.getGarage(user);
+
+    expect(garage.bikes[0].type).toBe('GRAVEL');
+    expect(bikeRepoSave).toHaveBeenCalled();
+  });
+});
+
+describe('GarageService.getGarage — sync paresseux (TTL)', () => {
+  function makeGarageService(lastSyncedAt: number) {
+    const bike = Object.assign(new Bike(), {
+      id: 1,
+      userId: 7,
+      stravaGearId: 'b1',
+      name: 'Tarmac',
+      type: 'ROAD',
+      stravaDistanceKm: 1000,
+      lastSyncedAt,
+    });
+    const getAthleteBikes = jest
+      .fn()
+      .mockResolvedValue([
+        { gearId: 'b1', name: 'Tarmac', distanceKm: 1000, primary: true },
+      ]);
+    const service = makeService({
+      bikeRepo: {
+        find: jest.fn().mockResolvedValue([bike]),
+        create: jest.fn((d) => Object.assign(new Bike(), d)),
+        save: jest.fn().mockImplementation((b) => Promise.resolve(b)),
+      },
+      tyreRepo: { find: jest.fn().mockResolvedValue([]) },
+      strava: {
+        getAthleteBikes,
+        getCyclingActivities: jest.fn().mockResolvedValue([]),
+      },
+      profile: {
+        getProfile: jest.fn().mockResolvedValue({
+          style_label: '',
+          weather_exposure: { rain_percentage: 0, rainy_rides: 0 },
+        }),
+      },
+    });
+    return { service, getAthleteBikes };
+  }
+
+  it('ne re-synchronise pas si le bike est récent (lastSyncedAt frais)', async () => {
+    const { service, getAthleteBikes } = makeGarageService(Date.now());
+    await service.getGarage(user);
+    expect(getAthleteBikes).not.toHaveBeenCalled();
+  });
+
+  it('re-synchronise si le bike est périmé (lastSyncedAt = 0)', async () => {
+    const { service, getAthleteBikes } = makeGarageService(0);
+    await service.getGarage(user);
+    expect(getAthleteBikes).toHaveBeenCalled();
+  });
+});
+
 describe('GarageService.getDemoGarage', () => {
   it('renvoie un jeu démo avec au moins un vélo et des pneus', () => {
     const demo = makeService().getDemoGarage();

@@ -14,6 +14,17 @@ import type { TyrePosition } from './garage-tyre.entity';
 import type { SetTyreDto } from './dto/set-tyre.dto';
 import { ReplaceTyreDto } from './dto/replace-tyre.dto';
 
+/** Mappe un sport_type Strava vers un type de vélo ; défaut ROAD. */
+const SPORT_TO_BIKE_TYPE: Record<string, string> = {
+  GravelRide: 'GRAVEL',
+  MountainBikeRide: 'MTB',
+  EMountainBikeRide: 'MTB',
+  EBikeRide: 'E-BIKE',
+};
+
+/** Au-delà de cette ancienneté, getGarage re-synchronise depuis Strava. */
+const SYNC_TTL_MS = 12 * 60 * 60 * 1000; // 12 h
+
 export interface TyreDto {
   id: number;
   position: TyrePosition;
@@ -73,7 +84,14 @@ export class GarageService {
 
   /** Garage complet : vélos + pneus montés + Tyre Scores. */
   async getGarage(user: User): Promise<GarageResponse> {
-    const bikes = await this.syncBikes(user);
+    let bikes = await this.bikeRepo.find({ where: { userId: user.id } });
+    const stale =
+      bikes.length === 0 ||
+      bikes.some((b) => Date.now() - b.lastSyncedAt > SYNC_TTL_MS);
+    if (stale) {
+      bikes = await this.syncBikes(user);
+    }
+
     const [activities, profile] = await Promise.all([
       this.strava.getCyclingActivities(user, {
         sinceDays: 365,
@@ -85,12 +103,19 @@ export class GarageService {
 
     const bikeDtos: BikeDto[] = [];
     for (const bike of bikes) {
-      const tyres = await this.tyreRepo.find({
-        where: { bikeId: bike.id, status: 'MOUNTED' },
-      });
       const bikeActivities = activities.filter(
         (a) => a.gearId === bike.stravaGearId,
       );
+
+      const derivedType = this.deriveBikeType(bikeActivities);
+      if (derivedType && derivedType !== bike.type) {
+        bike.type = derivedType;
+        await this.bikeRepo.save(bike);
+      }
+
+      const tyres = await this.tyreRepo.find({
+        where: { bikeId: bike.id, status: 'MOUNTED' },
+      });
       bikeDtos.push({
         id: bike.id,
         name: bike.name,
@@ -102,6 +127,25 @@ export class GarageService {
       });
     }
     return { success: true, bikes: bikeDtos };
+  }
+
+  /** Déduit le type de vélo (ROAD/GRAVEL/MTB/E-BIKE) du sport_type dominant. */
+  private deriveBikeType(activities: CyclingActivity[]): string | null {
+    if (activities.length === 0) return null;
+    const counts = new Map<string, number>();
+    for (const a of activities) {
+      const type = SPORT_TO_BIKE_TYPE[a.sportType] ?? 'ROAD';
+      counts.set(type, (counts.get(type) ?? 0) + 1);
+    }
+    let best: string | null = null;
+    let bestCount = -1;
+    for (const [type, count] of counts) {
+      if (count > bestCount) {
+        best = type;
+        bestCount = count;
+      }
+    }
+    return best;
   }
 
   /** Historique des pneus retirés, groupé par vélo. */
