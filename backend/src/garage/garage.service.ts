@@ -187,6 +187,11 @@ export class GarageService {
         `Avec ${rain}% de sorties sous la pluie, surveillez l'accroche sur la fin de vie.`,
       );
     }
+    if (profile.style_label) {
+      parts.push(
+        `Votre style ${profile.style_label.toLowerCase()} est pris en compte dans nos conseils d'entretien.`,
+      );
+    }
     return parts.join(' ');
   }
 

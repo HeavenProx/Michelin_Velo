@@ -90,6 +90,7 @@ describe('GarageService.getGarage', () => {
     expect(garage.bikes[0].tyres[0].km_used).toBe(500);
     expect(garage.bikes[0].tyres[0].status_label).toBeDefined();
     expect(garage.bikes[0].tyres[0].explanation).toContain('arrière');
+    expect(garage.bikes[0].tyres[0].explanation).toMatch(/endurance/i);
   });
 });
 
@@ -99,6 +100,8 @@ describe('GarageService.getDemoGarage', () => {
     expect(demo.success).toBe(true);
     expect(demo.bikes.length).toBeGreaterThan(0);
     expect(demo.bikes[0].tyres.length).toBeGreaterThan(0);
+    expect(demo.bikes[0].tyres[0].wear_percent).toBe(21);
+    expect(demo.bikes[0].tyres[1].wear_percent).toBe(40);
   });
 });
 
