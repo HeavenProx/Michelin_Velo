@@ -302,7 +302,7 @@ export class PeersService {
         terrain_label: peerProfile.terrain_label,
         monthly_distance: peerProfile.monthly_distance,
         avg_elevation_m: peerProfile.avg_elevation_m,
-        rain_percentage: peerProfile.weather_exposure.rain_percentage,
+        rain_percentage: peerProfile.weather_exposure.rain_percentage ?? 0,
       });
 
       const name = this.anonymizeName(review.user, review.authorName);
@@ -368,7 +368,7 @@ export class PeersService {
     const elevScore = Math.max(0, 100 - (elevDiff / 2000) * 100);
 
     const rainDiff = Math.abs(
-      user.weather_exposure.rain_percentage - peer.rain_percentage,
+      (user.weather_exposure.rain_percentage ?? 0) - peer.rain_percentage,
     );
     const rainScore = Math.max(0, 100 - (rainDiff / 60) * 100);
 
