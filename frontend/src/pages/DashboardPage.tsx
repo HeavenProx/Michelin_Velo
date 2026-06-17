@@ -109,10 +109,10 @@ export function DashboardPage() {
               value: String(totalRides),
               unit: "sorties au total",
             },
-            { Icon: Bike, value: String(monthlyKm), unit: "km ce mois" },
+            { Icon: Bike, value: `${liveData.profile.monthly_distance }km`, unit: "Distance ce mois" },
             {
               Icon: TrendingUp,
-              value: `${(monthlyElevation / 1000).toFixed(1)}km`,
+              value: `${monthlyElevation}m`,
               unit: "Dénivelé positif ce mois",
             },
           ].map(({ Icon, value, unit }) => (
