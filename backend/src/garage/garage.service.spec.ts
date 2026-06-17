@@ -1,4 +1,4 @@
-import type { Repository } from 'typeorm';
+import type { DeepPartial, ObjectLiteral, Repository } from 'typeorm';
 import type { StravaService } from '../strava/strava.service';
 import type { ProfileService } from '../profile/profile.service';
 import type { User } from '../users/user.entity';
@@ -11,19 +11,26 @@ import { NotFoundException } from '@nestjs/common';
 
 const user = { id: 7 } as User;
 
+// Les méthodes de Repository (create, save…) sont surchargées : un jest.fn()
+// ne matche pas leur signature stricte. On mocke donc chaque méthode comme
+// un jest.Mock, puis on cast vers le vrai type au moment de l'injection.
+type MockRepo<T extends ObjectLiteral> = Partial<
+  Record<keyof Repository<T>, jest.Mock>
+>;
+
 function makeService(
   over: {
-    bikeRepo?: Partial<Repository<Bike>>;
-    tyreRepo?: Partial<Repository<GarageTyre>>;
-    modelRepo?: Partial<Repository<TyreModel>>;
+    bikeRepo?: MockRepo<Bike>;
+    tyreRepo?: MockRepo<GarageTyre>;
+    modelRepo?: MockRepo<TyreModel>;
     strava?: Partial<StravaService>;
     profile?: Partial<ProfileService>;
   } = {},
 ) {
   return new GarageService(
-    (over.bikeRepo ?? {}) as Repository<Bike>,
-    (over.tyreRepo ?? {}) as Repository<GarageTyre>,
-    (over.modelRepo ?? {}) as Repository<TyreModel>,
+    (over.bikeRepo ?? {}) as unknown as Repository<Bike>,
+    (over.tyreRepo ?? {}) as unknown as Repository<GarageTyre>,
+    (over.modelRepo ?? {}) as unknown as Repository<TyreModel>,
     (over.strava ?? {}) as StravaService,
     (over.profile ?? {}) as ProfileService,
   );
@@ -64,7 +71,7 @@ describe('GarageService.getGarage', () => {
     const service = makeService({
       bikeRepo: {
         find: jest.fn().mockResolvedValue([bike]),
-        create: jest.fn((d) => Object.assign(new Bike(), d)),
+        create: jest.fn((d: DeepPartial<Bike>) => Object.assign(new Bike(), d)),
         save: jest.fn().mockImplementation((b) => Promise.resolve(b)),
       },
       tyreRepo: { find: jest.fn().mockResolvedValue([tyre]) },
@@ -134,7 +141,7 @@ describe('GarageService.getGarage — dérivation du type de vélo', () => {
     const service = makeService({
       bikeRepo: {
         find: jest.fn().mockResolvedValue([bike]),
-        create: jest.fn((d) => Object.assign(new Bike(), d)),
+        create: jest.fn((d: DeepPartial<Bike>) => Object.assign(new Bike(), d)),
         save: bikeRepoSave,
       },
       tyreRepo: { find: jest.fn().mockResolvedValue([tyre]) },
@@ -178,7 +185,7 @@ describe('GarageService.getGarage — sync paresseux (TTL)', () => {
     const service = makeService({
       bikeRepo: {
         find: jest.fn().mockResolvedValue([bike]),
-        create: jest.fn((d) => Object.assign(new Bike(), d)),
+        create: jest.fn((d: DeepPartial<Bike>) => Object.assign(new Bike(), d)),
         save: jest.fn().mockImplementation((b) => Promise.resolve(b)),
       },
       tyreRepo: { find: jest.fn().mockResolvedValue([]) },
@@ -239,7 +246,7 @@ describe('GarageService.syncBikes', () => {
       },
       bikeRepo: {
         find: jest.fn().mockResolvedValue([existing]),
-        create: jest.fn((d) => Object.assign(new Bike(), d)),
+        create: jest.fn((d: DeepPartial<Bike>) => Object.assign(new Bike(), d)),
         save: jest.fn((b) => {
           saved.push(b as Bike);
           return Promise.resolve(b);
@@ -275,7 +282,9 @@ describe('GarageService.replaceTyre', () => {
     const service = makeService({
       tyreRepo: {
         findOne: jest.fn().mockResolvedValue(old),
-        create: jest.fn((d) => Object.assign(new GarageTyre(), d)),
+        create: jest.fn((d: DeepPartial<GarageTyre>) =>
+          Object.assign(new GarageTyre(), d),
+        ),
         save: jest.fn((t) => {
           saved.push(t as GarageTyre);
           return Promise.resolve(t);
@@ -338,7 +347,9 @@ describe('GarageService.setTyre', () => {
       },
       tyreRepo: {
         findOne: jest.fn().mockResolvedValue(null),
-        create: jest.fn((d) => Object.assign(new GarageTyre(), d)),
+        create: jest.fn((d: DeepPartial<GarageTyre>) =>
+          Object.assign(new GarageTyre(), d),
+        ),
         save: jest.fn((t) => {
           saved.push(t as GarageTyre);
           return Promise.resolve(t);
