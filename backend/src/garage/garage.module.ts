@@ -6,6 +6,7 @@ import { StravaModule } from '../strava/strava.module';
 import { TyreModel } from '../tyres/tyre-model.entity';
 import { Bike } from './bike.entity';
 import { GarageTyre } from './garage-tyre.entity';
+import { GarageController } from './garage.controller';
 import { GarageService } from './garage.service';
 
 @Module({
@@ -15,6 +16,7 @@ import { GarageService } from './garage.service';
     ProfileModule,
     AuthModule,
   ],
+  controllers: [GarageController],
   providers: [GarageService],
   exports: [GarageService],
 })
