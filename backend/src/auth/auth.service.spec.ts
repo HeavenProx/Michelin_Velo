@@ -49,7 +49,7 @@ describe('AuthService', () => {
         ENV.STRAVA_CALLBACK_URL,
       );
       expect(url.searchParams.get('response_type')).toBe('code');
-      expect(url.searchParams.get('scope')).toBe('read,activity:read_all');
+      expect(url.searchParams.get('scope')).toBe('read,profile:read_all,activity:read_all');
       expect(url.searchParams.get('state')).toBe('state-abc');
     });
   });
