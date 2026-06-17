@@ -187,4 +187,56 @@ describe('GarageService.setTyre', () => {
       NotFoundException,
     );
   });
+
+  it('rejette un modele de pneu introuvable', async () => {
+    const service = makeService({
+      bikeRepo: {
+        findOne: jest
+          .fn()
+          .mockResolvedValue(Object.assign(new Bike(), { id: 1, userId: 7 })),
+      },
+      modelRepo: { findOne: jest.fn().mockResolvedValue(null) },
+    });
+    await expect(service.setTyre(user, dto)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('met a jour le pneu monte existant a cette position', async () => {
+    const existing = Object.assign(new GarageTyre(), {
+      id: 42,
+      bikeId: 1,
+      position: 'FRONT',
+      status: 'MOUNTED',
+      tyreModelId: 1,
+      mountedDate: '2025-01-01',
+    });
+    const created = jest.fn();
+    const saved: GarageTyre[] = [];
+    const service = makeService({
+      bikeRepo: {
+        findOne: jest
+          .fn()
+          .mockResolvedValue(Object.assign(new Bike(), { id: 1, userId: 7 })),
+      },
+      modelRepo: {
+        findOne: jest
+          .fn()
+          .mockResolvedValue({ id: 99, modelName: 'POWER ROAD' }),
+      },
+      tyreRepo: {
+        findOne: jest.fn().mockResolvedValue(existing),
+        create: created,
+        save: jest.fn((t) => {
+          saved.push(t as GarageTyre);
+          return Promise.resolve(t);
+        }),
+      },
+    });
+    await service.setTyre(user, dto);
+    expect(created).not.toHaveBeenCalled();
+    expect(saved[0].id).toBe(42);
+    expect(saved[0].tyreModelId).toBe(99);
+    expect(saved[0].mountedDate).toBe('2025-08-15');
+  });
 });

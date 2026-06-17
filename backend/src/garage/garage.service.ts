@@ -11,7 +11,7 @@ import type { CyclingActivity } from '../strava/strava.types';
 import type { RiderProfile } from '../profile/profile.types';
 import { computeTyreScore, type TyreScore } from './garage.wear';
 import type { TyrePosition } from './garage-tyre.entity';
-import { SetTyreDto } from './dto/set-tyre.dto';
+import type { SetTyreDto } from './dto/set-tyre.dto';
 
 export interface TyreDto {
   id: number;
