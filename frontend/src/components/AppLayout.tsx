@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Outlet, NavLink, Navigate, useNavigate } from "react-router";
-import { User, Package, Bell, Star, LogOut, Loader2 } from "lucide-react";
+import { User, Cog, Bell, Star, LogOut, Loader2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
 const NAV_ITEMS = [
   { path: "/profil",   label: "Profil",   Icon: User    },
-  { path: "/mon-pneu", label: "Mon pneu", Icon: Package },
+  { path: "/mon-pneu", label: "Mes pneus", Icon: Cog     },
   { path: "/alertes",  label: "Alertes",  Icon: Bell    },
   { path: "/avis",     label: "Avis",     Icon: Star    },
 ];

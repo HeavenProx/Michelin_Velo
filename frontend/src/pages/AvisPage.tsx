@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Star, MapPin, TrendingUp, Bike, Filter } from "lucide-react";
 import { StarRating } from "@/components/StarRating";
 import { CritBar } from "@/components/CritBar";
+<<<<<<< HEAD
 import { ReviewModal } from "@/components/ReviewModal";
 import { useApp } from "@/context/AppContext";
 import type { Review } from "@/types";
@@ -9,6 +10,15 @@ import type { Review } from "@/types";
 export function AvisPage() {
   const { liveData } = useApp();
   const recommendedTire = liveData?.reco.recommended.name ?? "";
+=======
+import { REVIEWS } from "@/data/demo";
+import type { Review } from "@/types";
+
+export function AvisPage() {
+  const [filter, setFilter]           = useState("Tous");
+  const [showFilter, setShowFilter]   = useState(false);
+  const [filterQuery, setFilterQuery] = useState("");
+>>>>>>> garage-interface
 
   const [filter, setFilter] = useState("Tous");
   const [showFilter, setShowFilter] = useState(false);
@@ -51,7 +61,7 @@ export function AvisPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Avis</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{reviews.length} avis</p>
+          <p className="text-sm text-gray-400 mt-0.5">{filtered.length} avis{filter !== "Tous" && ` · ${filter}`}</p>
         </div>
         <button
           onClick={() => setShowFilter((v) => !v)}
@@ -66,6 +76,7 @@ export function AvisPage() {
         </button>
       </div>
 
+<<<<<<< HEAD
       {/* Note explicative */}
       <p className="text-xs text-gray-400 leading-relaxed -mt-2">
         Les avis affichés par défaut portent sur votre pneu actuel.
@@ -73,6 +84,8 @@ export function AvisPage() {
         avis sur d&apos;autres pneus.
       </p>
 
+=======
+>>>>>>> garage-interface
       {/* Panneau filtre */}
       {showFilter && (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
@@ -206,6 +219,7 @@ export function AvisPage() {
         })}
       </div>
 
+<<<<<<< HEAD
       {/* CTA laisser un avis */}
       <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
         <p className="text-sm text-gray-600 mb-0.5">
@@ -229,6 +243,8 @@ export function AvisPage() {
         tireName={recommendedTire}
         onSubmitted={loadReviews}
       />
+=======
+>>>>>>> garage-interface
     </div>
   );
 }

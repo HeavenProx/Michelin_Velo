@@ -66,3 +66,29 @@ export interface Review {
   date: string;
   criteria: { grip: number; durabilite: number; confort: number; anticrv: number };
 }
+
+export interface GarageTyre {
+  id: number;
+  position: "FRONT" | "REAR";
+  model: { name: string; lifetime_km: number; price_range: string };
+  mounted_date: string;
+  km_used: number;
+  km_max_adjusted: number;
+  km_left: number;
+  wear_percent: number;
+  status_label: string;
+  explanation: string;
+}
+
+export interface GarageBike {
+  id: number;
+  name: string;
+  type: "ROAD" | "GRAVEL" | "MTB" | "E-BIKE";
+  strava_distance_km: number;
+  tyres: GarageTyre[];
+}
+
+export interface GarageData {
+  success: true;
+  bikes: GarageBike[];
+}
