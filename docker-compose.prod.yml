@@ -16,6 +16,9 @@
 services:
   backend:
     image: ghcr.io/heavenprox/michelin-backend:${IMAGE_TAG:-latest}
+    # Re-télécharge l'image à chaque déploiement (sinon le :latest en cache
+    # est réutilisé et les corrections ne sont jamais prises en compte)
+    pull_policy: always
     restart: unless-stopped
     env_file: .env
     environment:
@@ -29,6 +32,7 @@ services:
 
   frontend:
     image: ghcr.io/heavenprox/michelin-frontend:${IMAGE_TAG:-latest}
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       - backend
