@@ -139,9 +139,8 @@ jobs:
     steps:
       - name: Déclencher le redéploiement Dokploy
         run: |
-          HTTP=$(curl -sS -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -o response.txt -w "%{http_code}")
+          # Les webhooks de déploiement Dokploy se déclenchent en GET
+          HTTP=$(curl -sS "${{ secrets.DOKPLOY_WEBHOOK_URL }}" -o response.txt -w "%{http_code}")
           echo "Code HTTP : $HTTP"
           echo "Réponse Dokploy : $(cat response.txt)"
           if [ "$HTTP" -ge 400 ]; then
