@@ -252,16 +252,24 @@ export class RecommendService {
     const casing = (model.casingTechnologies ?? '').toUpperCase();
     const tread = (model.treadTechnologies ?? '').toUpperCase();
 
-    if (rubber.includes('GUM-X')) features.push('Compound GUM-X haute performance');
-    else if (rubber.includes('MAGI-X')) features.push('Compound MAGI-X longue durée');
+    if (rubber.includes('GUM-X'))
+      features.push('Compound GUM-X haute performance');
+    else if (rubber.includes('MAGI-X'))
+      features.push('Compound MAGI-X longue durée');
 
-    if (casing.includes('BEAD TO BEAD SHIELD')) features.push('Protection Bead to Bead Shield');
-    else if (casing.includes('ARAMID SHIELD')) features.push('Renfort anti-crevaison Aramid Shield');
-    else if (casing.includes('TUBELESS SHIELD')) features.push('Bouclier Tubeless Shield');
-    else if (casing.includes('HI-DENSITY SHIELD')) features.push('Bouclier Hi-Density Shield');
+    if (casing.includes('BEAD TO BEAD SHIELD'))
+      features.push('Protection Bead to Bead Shield');
+    else if (casing.includes('ARAMID SHIELD'))
+      features.push('Renfort anti-crevaison Aramid Shield');
+    else if (casing.includes('TUBELESS SHIELD'))
+      features.push('Bouclier Tubeless Shield');
+    else if (casing.includes('HI-DENSITY SHIELD'))
+      features.push('Bouclier Hi-Density Shield');
 
-    if (tread.includes('HI-GRIP DESIGN')) features.push('Sculpture Hi-Grip Design');
-    else if (tread.includes('GRIP DESIGN')) features.push('Sculpture Grip Design');
+    if (tread.includes('HI-GRIP DESIGN'))
+      features.push('Sculpture Hi-Grip Design');
+    else if (tread.includes('GRIP DESIGN'))
+      features.push('Sculpture Grip Design');
 
     if (
       model.sealing?.toUpperCase() === 'TUBELESS READY' ||
@@ -275,15 +283,20 @@ export class RecommendService {
     if (name.includes('GRAVEL')) features.push('Polyvalence route et gravel');
 
     if (features.length < 2) {
-      if (model.scoreWetGrip >= 4) features.push('Accroche optimale par temps humide');
-      if (model.scoreRollingResistance >= 4) features.push('Faible résistance au roulement');
+      if (model.scoreWetGrip >= 4)
+        features.push('Accroche optimale par temps humide');
+      if (model.scoreRollingResistance >= 4)
+        features.push('Faible résistance au roulement');
       if (model.scoreDurability >= 4) features.push('Durabilité renforcée');
-      if (model.scoreTerrainVersatility >= 4) features.push('Polyvalence terrain confirmée');
+      if (model.scoreTerrainVersatility >= 4)
+        features.push('Polyvalence terrain confirmée');
     }
 
     if (features.length === 0) {
       features.push('Pneu Michelin haute performance');
-      features.push(`Durée de vie estimée ${model.lifetimeKm.toLocaleString('fr-FR')} km`);
+      features.push(
+        `Durée de vie estimée ${model.lifetimeKm.toLocaleString('fr-FR')} km`,
+      );
     }
 
     return features.slice(0, 3);
