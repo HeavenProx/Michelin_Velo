@@ -5,6 +5,12 @@ node_modules/
 package-lock.json
 yarn.lock
 
+# pnpm-workspace.yaml régénéré par `pnpm approve-builds` :
+# casse la CI (`packages field missing or empty`). La config des builds
+# natifs est dans le champ "pnpm.onlyBuiltDependencies" de chaque package.json.
+backend/pnpm-workspace.yaml
+frontend/pnpm-workspace.yaml
+
 # Variables d'environnement — NE JAMAIS COMMIT
 .env
 .env.local
