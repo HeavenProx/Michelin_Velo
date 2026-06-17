@@ -3,15 +3,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module';
 import { ProfileModule } from '../profile/profile.module';
 import { StravaModule } from '../strava/strava.module';
+import { TyreModel } from '../tyres/tyre-model.entity';
 import { Bike } from './bike.entity';
 import { GarageTyre } from './garage-tyre.entity';
+import { GarageService } from './garage.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Bike, GarageTyre]),
+    TypeOrmModule.forFeature([Bike, GarageTyre, TyreModel]),
     StravaModule,
     ProfileModule,
     AuthModule,
   ],
+  providers: [GarageService],
+  exports: [GarageService],
 })
 export class GarageModule {}
