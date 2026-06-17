@@ -11,6 +11,7 @@ import { GarageTyre } from './garage/garage-tyre.entity';
 import { GarageModule } from './garage/garage.module';
 import { ProfileModule } from './profile/profile.module';
 import { ProfileSnapshot } from './profile/profile-snapshot.entity';
+import { NotificationModule } from './notification/notification.module';
 import { RecommendModule } from './recommend/recommend.module';
 import { StravaModule } from './strava/strava.module';
 import { TyreModel } from './tyres/tyre-model.entity';
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module';
     StravaModule,
     ProfileModule,
     RecommendModule,
+    NotificationModule,
     AvisModule,
     GarageModule,
   ],
