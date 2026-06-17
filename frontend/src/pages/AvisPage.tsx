@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Star, MapPin, TrendingUp, Bike, Filter } from "lucide-react";
+import { Star, MapPin, TrendingUp, Bike, Filter, MessageSquare } from "lucide-react";
 import { StarRating } from "@/components/StarRating";
 import { CritBar } from "@/components/CritBar";
-import { ReviewModal } from "@/components/ReviewModal";
 import { useApp } from "@/context/AppContext";
 import type { Review } from "@/types";
 
@@ -14,7 +13,6 @@ export function AvisPage() {
   const [filter, setFilter] = useState("Tous");
   const [showFilter, setShowFilter] = useState(false);
   const [filterQuery, setFilterQuery] = useState("");
-  const [showModal, setShowModal] = useState(false);
 
   const [reviews, setReviews] = useState<Review[]>([]);
 
@@ -171,6 +169,21 @@ export function AvisPage() {
         </div>
       )}
 
+      {/* État vide — aucun avis en base */}
+      {reviews.length === 0 && (
+        <div className="flex flex-col items-center text-center py-10 px-4 gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
+            <MessageSquare size={28} className="text-gray-300" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-900 text-base mb-1">Aucun avis pour le moment</p>
+            <p className="text-sm text-gray-400 leading-relaxed max-w-[20rem] mx-auto">
+              Les avis des cyclistes apparaîtront ici. Pour partager votre expérience sur un pneu, rendez-vous dans <span className="font-semibold text-gray-600">Mes pneus</span>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Cartes avis */}
       <div className="space-y-4">
         {filtered.map((r) => {
@@ -238,29 +251,6 @@ export function AvisPage() {
         })}
       </div>
 
-      {/* CTA laisser un avis */}
-      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
-        <p className="text-sm text-gray-600 mb-0.5">
-          Partagez votre expérience
-          {recommendedTire ? ` sur vos ${recommendedTire}` : ""}.
-        </p>
-        <p className="text-xs text-gray-400 mb-4">
-          Votre avis aide la communauté.
-        </p>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-[#00205B] text-white font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-[#27509B] transition-colors"
-        >
-          Laisser un avis
-        </button>
-      </div>
-
-      <ReviewModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        tireName={recommendedTire}
-        onSubmitted={loadReviews}
-      />
     </div>
   );
 }

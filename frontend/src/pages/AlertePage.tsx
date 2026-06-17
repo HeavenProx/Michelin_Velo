@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Bell, CheckCircle, ChevronRight, Star, X } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle, ChevronRight, ShieldCheck, Star, X } from "lucide-react";
 import { StoreSection } from "@/components/StoreSection";
 import { ReviewModal } from "@/components/ReviewModal";
 import { useApp } from "@/context/AppContext";
@@ -17,6 +17,8 @@ export function AlertePage() {
   const alerts           = alertsData?.alerts   ?? [];
   const reminders        = alertsData?.reminders ?? [];
 
+  const isEmpty = activeWearAlerts.length === 0 && alerts.length === 0 && reminders.length === 0;
+
   function openReview(tire: string) {
     setReviewTire(tire);
     setShowReviewModal(true);
@@ -28,6 +30,36 @@ export function AlertePage() {
         <h1 className="text-2xl font-bold text-gray-900">Alertes</h1>
         <p className="text-sm text-gray-400 mt-0.5">Usure &amp; rappels avis</p>
       </div>
+
+      {/* ── État vide ── */}
+      {isEmpty && (
+        <div className="flex flex-col items-center text-center py-6 px-4 gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-[#00205B]/5 flex items-center justify-center">
+            <ShieldCheck size={30} className="text-[#00205B]/40" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-900 text-base mb-1">Vous n&apos;avez pas encore d&apos;alertes</p>
+            <p className="text-sm text-gray-400 leading-relaxed max-w-[24rem] mx-auto">
+              Dès que vos pneus approchent de leur limite d&apos;usure ou qu&apos;un palier kilométrique est atteint,
+              vous serez averti ici pour changer vos pneus au bon moment et partager votre retour d&apos;expérience.
+            </p>
+          </div>
+          <div className="w-full max-w-[24rem] space-y-2 text-left">
+            <div className="flex items-start gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3">
+              <AlertTriangle size={15} className="text-red-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-gray-500 leading-relaxed">
+                <span className="font-semibold text-gray-700">Alerte d&apos;usure</span> — signale quand votre pneu dépasse le seuil de remplacement recommandé.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3">
+              <Star size={15} className="text-amber-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-gray-500 leading-relaxed">
+                <span className="font-semibold text-gray-700">Rappel avis</span> — vous invite à partager votre expérience après chaque tranche de kilomètres.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Nouvelles alertes d'usure (live depuis le Tyre Score) ── */}
       {activeWearAlerts.length > 0 && (
@@ -94,8 +126,8 @@ export function AlertePage() {
         </div>
       )}
 
-      {/* ── Historique d'alertes ── */}
-      <div>
+      {/* ── Historique d’alertes ── */}
+      {!isEmpty && <div>
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400 mb-3">
           {activeWearAlerts.length > 0 ? "Historique" : "Alertes d’usure"}
         </p>
@@ -134,10 +166,10 @@ export function AlertePage() {
             );
           })}
         </div>
-      </div>
+      </div>}
 
       {/* ── Rappels avis ── */}
-      <div>
+      {!isEmpty && <div>
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400 mb-3">Rappels avis</p>
         <div className="space-y-3">
           {reminders.map((r, i) => (
@@ -170,7 +202,7 @@ export function AlertePage() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       <ReviewModal open={showReviewModal} onClose={() => setShowReviewModal(false)} tireName={reviewTire} />
     </div>

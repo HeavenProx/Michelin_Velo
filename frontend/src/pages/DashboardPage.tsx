@@ -120,7 +120,7 @@ export function DashboardPage() {
             {
               Icon: Calendar,
               value: String(totalRides),
-              unit: "sorties au total",
+              unit: "sorties vélo au total",
             },
             {
               Icon: Bike,
@@ -224,7 +224,7 @@ export function DashboardPage() {
         )}
 
         {/* Cyclistes similaires */}
-        <div>
+        {(peers ?? []).length > 0 && <div>
           <p className="text-gray-400 text-[10px] font-bold tracking-[0.18em] uppercase mb-3">
             Cyclistes au profil similaire
           </p>
@@ -283,7 +283,7 @@ export function DashboardPage() {
               );
             })}
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );

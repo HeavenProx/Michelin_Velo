@@ -47,16 +47,16 @@ export function TyrePicker({
     ? models.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
     : models;
 
-  async function handleSave() {
-    if (!selected || !mountedDate) return;
+  async function doSave(model: TyreModelOption, date: string) {
+    if (!date) return;
     setSaving(true);
     setError("");
     try {
       const url    = existingTyreId ? `/api/garage/tyres/${existingTyreId}/replace` : "/api/garage/tyres";
       const method = existingTyreId ? "POST" : "PUT";
       const body   = existingTyreId
-        ? { modelGlobalId: selected.globalId, mountedDate }
-        : { bikeId, position, modelGlobalId: selected.globalId, mountedDate };
+        ? { modelGlobalId: model.globalId, mountedDate: date }
+        : { bikeId, position, modelGlobalId: model.globalId, mountedDate: date };
 
       const res = await fetch(url, {
         method,
@@ -65,10 +65,7 @@ export function TyrePicker({
         body: JSON.stringify(body),
       });
 
-      if (res.status === 401) {
-        setError("session_expired");
-        return;
-      }
+      if (res.status === 401) { setError("session_expired"); return; }
       if (!res.ok) throw new Error();
       onSuccess();
       onClose();
@@ -77,6 +74,17 @@ export function TyrePicker({
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleSelect(model: TyreModelOption) {
+    setSelected(model);
+    setError("");
+    void doSave(model, mountedDate);
+  }
+
+  function handleDateChange(newDate: string) {
+    setMountedDate(newDate);
+    if (selected) void doSave(selected, newDate);
   }
 
   return createPortal(
@@ -104,6 +112,19 @@ export function TyrePicker({
           >
             <X size={16} className="text-gray-600" />
           </button>
+        </div>
+
+        {/* Date de pose */}
+        <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-3 flex-shrink-0">
+          <CalendarDays size={15} className="text-gray-400 flex-shrink-0" />
+          <label className="text-sm text-gray-600 flex-shrink-0">Date de pose</label>
+          <input
+            type="date"
+            value={mountedDate}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="flex-1 bg-transparent text-sm text-gray-700 outline-none min-w-0 text-right"
+          />
         </div>
 
         {/* Recherche */}
@@ -143,8 +164,9 @@ export function TyrePicker({
             return (
               <button
                 key={model.globalId}
-                onClick={() => { setSelected(model); setError(""); }}
-                className={`w-full text-left rounded-xl border px-4 py-3 transition-all flex items-center justify-between gap-3 ${
+                onClick={() => handleSelect(model)}
+                disabled={saving}
+                className={`w-full text-left rounded-xl border px-4 py-3 transition-all flex items-center justify-between gap-3 disabled:opacity-60 ${
                   isSelected
                     ? "border-[#00205B] bg-[#00205B]/5"
                     : "border-gray-200 bg-white hover:border-[#00205B]/30 hover:bg-gray-50"
@@ -153,26 +175,17 @@ export function TyrePicker({
                 <p className={`font-semibold text-sm ${isSelected ? "text-[#00205B]" : "text-gray-900"}`}>
                   {model.name}
                 </p>
-                {isSelected && <CheckCircle2 size={16} className="text-[#00205B] flex-shrink-0" />}
+                {saving && isSelected
+                  ? <Loader2 size={15} className="text-[#00205B] animate-spin flex-shrink-0" />
+                  : isSelected && <CheckCircle2 size={16} className="text-[#00205B] flex-shrink-0" />
+                }
               </button>
             );
           })}
         </div>
 
-        {/* Date + CTA */}
-        <div className="pt-4 space-y-3 flex-shrink-0">
-          <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-            <CalendarDays size={15} className="text-gray-400 flex-shrink-0" />
-            <label className="text-sm text-gray-600 flex-shrink-0">Date de pose</label>
-            <input
-              type="date"
-              value={mountedDate}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setMountedDate(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-gray-700 outline-none min-w-0 text-right"
-            />
-          </div>
-
+        {/* Erreurs */}
+        <div className="pt-3 flex-shrink-0">
           {error === "session_expired" ? (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
               <p className="text-sm font-semibold text-amber-800 mb-1">Session expirée</p>
@@ -187,25 +200,6 @@ export function TyrePicker({
           ) : error ? (
             <p className="text-xs text-red-600 text-center">{error}</p>
           ) : null}
-
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!selected || !mountedDate || saving}
-              className="flex-1 bg-[#00205B] text-white font-semibold py-3 rounded-xl text-sm hover:bg-[#27509B] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving
-                ? <><Loader2 size={15} className="animate-spin" /> Enregistrement…</>
-                : "Monter ce pneu"
-              }
-            </button>
-          </div>
         </div>
 
       </div>

@@ -17,21 +17,6 @@ const BIKE_TYPE_LABEL: Record<string, string> = {
   "E-BIKE": "E-Bike",
 };
 
-const REVIEW_MILESTONES = [500, 1_000, 2_000, 3_500];
-
-function reviewedKey(tireName: string, milestone: number) {
-  return `michelin_reviewed_${tireName}_${milestone}`;
-}
-
-function hasReviewedMilestone(tireName: string, milestone: number): boolean {
-  try { return localStorage.getItem(reviewedKey(tireName, milestone)) === "true"; }
-  catch { return false; }
-}
-
-function markMilestoneReviewed(tireName: string, milestone: number) {
-  try { localStorage.setItem(reviewedKey(tireName, milestone), "true"); } catch {}
-}
-
 function wearColors(wear: number) {
   if (wear >= 80) return { bg: "bg-red-50",   text: "text-red-600",   border: "border-red-100"   };
   if (wear >= 55) return { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" };
@@ -42,9 +27,11 @@ interface TyreCardProps {
   tyre: GarageTyre;
   onDateChange: (tyreId: number, date: string) => void;
   onReplace?: () => void;
+  onReview?: () => void;
+  reviewed?: boolean;
 }
 
-function TyreCard({ tyre, onDateChange, onReplace }: TyreCardProps) {
+function TyreCard({ tyre, onDateChange, onReplace, onReview, reviewed }: TyreCardProps) {
   const c = wearColors(tyre.wear_percent);
   const posLabel = tyre.position === "FRONT" ? "Avant" : "Arrière";
 
@@ -97,14 +84,34 @@ function TyreCard({ tyre, onDateChange, onReplace }: TyreCardProps) {
         </p>
       )}
 
-      {onReplace && (
-        <button
-          onClick={onReplace}
-          className="mt-3 pt-3 border-t border-black/8 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#27509B] hover:text-[#00205B] transition-colors"
-        >
-          <RefreshCw size={11} />
-          Changer de pneu
-        </button>
+      {(onReplace || onReview) && (
+        <div className="mt-3 pt-3 border-t border-black/8 flex gap-3">
+          {onReplace && (
+            <button
+              onClick={onReplace}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#27509B] hover:text-[#00205B] transition-colors"
+            >
+              <RefreshCw size={11} />
+              Changer de pneu
+            </button>
+          )}
+          {onReview && (
+            reviewed ? (
+              <span className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-green-600">
+                <CheckCircle size={11} />
+                Avis envoyé
+              </span>
+            ) : (
+              <button
+                onClick={onReview}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#27509B] hover:text-[#00205B] transition-colors"
+              >
+                <Star size={11} />
+                Laisser un avis
+              </button>
+            )
+          )}
+        </div>
       )}
     </div>
   );
@@ -176,7 +183,8 @@ export function GaragePage() {
   const [activeBikeIdx, setActiveBikeIdx] = useState(0);
   const [showStores, setShowStores]       = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewDone, setReviewDone]       = useState(false);
+  const [reviewTire, setReviewTire]       = useState("");
+  const [reviewedTyres, setReviewedTyres] = useState<Set<string>>(new Set());
   const [picker, setPicker]               = useState<PickerState>(PICKER_CLOSED);
 
   const isDemo = liveData?.isDemo ?? false;
@@ -204,7 +212,7 @@ export function GaragePage() {
     }
   }, [garage, triggerWearAlert]);
 
-  useEffect(() => { setReviewDone(false); }, [activeBikeIdx]);
+  useEffect(() => { setReviewedTyres(new Set()); }, [activeBikeIdx]);
 
   function handleDateChange(tyreId: number, date: string) {
     setGarage((prev) => {
@@ -229,23 +237,17 @@ export function GaragePage() {
     }
   }
 
-  function openPicker(
-    bike: GarageBike,
-    position: "FRONT" | "REAR",
-    existingTyreId?: number,
-  ) {
-    setPicker({
-      open: true,
-      bikeId: bike.id,
-      bikeName: bike.name,
-      bikeType: bike.type,
-      position,
-      existingTyreId,
-    });
+  function openPicker(bike: GarageBike, position: "FRONT" | "REAR", existingTyreId?: number) {
+    setPicker({ open: true, bikeId: bike.id, bikeName: bike.name, bikeType: bike.type, position, existingTyreId });
   }
 
-  function handlePickerSuccess() {
-    loadGarage();
+  function openReview(tyreName: string) {
+    setReviewTire(tyreName);
+    setShowReviewModal(true);
+  }
+
+  function handleReviewSubmitted() {
+    setReviewedTyres((prev) => new Set([...prev, reviewTire]));
   }
 
   if (garageLoading) return <LoadingSkeleton />;
@@ -257,24 +259,6 @@ export function GaragePage() {
 
   const hasCritical      = activeBike?.tyres.some((t) => t.wear_percent >= 80) ?? false;
   const needsReplacement = activeBike?.tyres.some((t) => t.wear_percent >= 55) ?? false;
-
-  const tyresWithKm  = [frontTyre, rearTyre].filter((t): t is GarageTyre => t !== null);
-  const bestTyre     = tyresWithKm.sort((a, b) => b.km_used - a.km_used)[0] ?? null;
-  const kmForReview  = bestTyre?.km_used ?? 0;
-
-  const currentMilestone = [...REVIEW_MILESTONES].reverse().find((m) => m <= kmForReview);
-  const nextMilestone    = REVIEW_MILESTONES.find((m) => m > kmForReview);
-  const canReview        = currentMilestone !== undefined;
-  const alreadyReviewed  = canReview && bestTyre
-    ? hasReviewedMilestone(bestTyre.model.name, currentMilestone!)
-    : false;
-
-  function handleReviewSubmitted() {
-    if (bestTyre && currentMilestone !== undefined) {
-      markMilestoneReviewed(bestTyre.model.name, currentMilestone);
-    }
-    setReviewDone(true);
-  }
 
   return (
     <div className="px-4 py-5 space-y-5">
@@ -345,6 +329,8 @@ export function GaragePage() {
                 tyre={frontTyre}
                 onDateChange={handleDateChange}
                 onReplace={!isDemo && activeBike ? () => openPicker(activeBike, "FRONT", frontTyre.id) : undefined}
+                onReview={!isDemo ? () => openReview(frontTyre.model.name) : undefined}
+                reviewed={reviewedTyres.has(frontTyre.model.name)}
               />
             ) : (
               <EmptyTyreSlot
@@ -357,6 +343,8 @@ export function GaragePage() {
                 tyre={rearTyre}
                 onDateChange={handleDateChange}
                 onReplace={!isDemo && activeBike ? () => openPicker(activeBike, "REAR", rearTyre.id) : undefined}
+                onReview={!isDemo ? () => openReview(rearTyre.model.name) : undefined}
+                reviewed={reviewedTyres.has(rearTyre.model.name)}
               />
             ) : (
               <EmptyTyreSlot
@@ -396,69 +384,13 @@ export function GaragePage() {
               )}
             </>
           )}
-
-          {/* ── Invitation à laisser un avis ── */}
-          {bestTyre && (
-            canReview ? (
-              alreadyReviewed || reviewDone ? (
-                <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
-                  <CheckCircle size={18} className="text-green-600 flex-shrink-0" />
-                  <div>
-                    <p className="font-bold text-green-800 text-sm">
-                      Avis envoyé — palier {currentMilestone!.toLocaleString("fr-FR")} km
-                    </p>
-                    {nextMilestone && (
-                      <p className="text-xs text-green-700 mt-0.5">
-                        Prochain palier dans {(nextMilestone - kmForReview).toLocaleString("fr-FR")} km.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Star size={15} className="text-[#27509B]" />
-                    <p className="font-bold text-sm text-[#00205B]">Palier {currentMilestone!.toLocaleString("fr-FR")} km atteint !</p>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                    Vous avez parcouru <span className="font-semibold">{kmForReview.toLocaleString("fr-FR")} km</span> avec le{" "}
-                    <span className="font-medium">{bestTyre.model.name}</span>. Votre retour d&apos;expérience aide la communauté à choisir.
-                  </p>
-                  <button
-                    onClick={() => setShowReviewModal(true)}
-                    className="text-[#27509B] font-semibold text-sm flex items-center gap-1"
-                  >
-                    Laisser un avis <ChevronRight size={14} />
-                  </button>
-                </div>
-              )
-            ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Vers votre premier avis</p>
-                  <span className="text-xs font-bold text-gray-400">
-                    {kmForReview.toLocaleString("fr-FR")} / {REVIEW_MILESTONES[0].toLocaleString("fr-FR")} km
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-[#27509B] h-1.5 rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (kmForReview / REVIEW_MILESTONES[0]) * 100)}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-2">
-                  Encore {(REVIEW_MILESTONES[0] - kmForReview).toLocaleString("fr-FR")} km avant de pouvoir laisser un avis.
-                </p>
-              </div>
-            )
-          )}
         </>
       )}
 
       <ReviewModal
         open={showReviewModal}
         onClose={() => setShowReviewModal(false)}
-        tireName={bestTyre?.model.name ?? ""}
+        tireName={reviewTire}
         onSubmitted={handleReviewSubmitted}
       />
 
@@ -470,7 +402,7 @@ export function GaragePage() {
         bikeType={picker.bikeType}
         position={picker.position}
         existingTyreId={picker.existingTyreId}
-        onSuccess={handlePickerSuccess}
+        onSuccess={() => { loadGarage(); setPicker(PICKER_CLOSED); }}
       />
     </div>
   );
