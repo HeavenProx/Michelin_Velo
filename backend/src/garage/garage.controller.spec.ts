@@ -28,6 +28,8 @@ describe('GarageController', () => {
 
     const res = controller.getDemo();
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(service.getDemoGarage).toHaveBeenCalled();
     expect(res.success).toBe(true);
   });
 
