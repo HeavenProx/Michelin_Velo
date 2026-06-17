@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -15,9 +16,15 @@ export class RecommendController {
 
   @Get('recommend')
   @UseGuards(AuthenticatedGuard)
-  async getRecommendation(@Req() req: Request) {
+  async getRecommendation(
+    @Req() req: Request,
+    @Query('refresh') refresh?: string,
+  ) {
     if (!req.user) throw new UnauthorizedException();
-    return this.recommendService.getRecommendation(req.user);
+    return this.recommendService.getRecommendation(
+      req.user,
+      refresh === 'true',
+    );
   }
 
   @Get('demo')

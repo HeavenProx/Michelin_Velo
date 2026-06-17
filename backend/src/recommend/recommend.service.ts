@@ -76,8 +76,8 @@ export class RecommendService {
     private readonly profileService: ProfileService,
   ) {}
 
-  async getRecommendation(user: User): Promise<RecoResponse> {
-    const profile = await this.profileService.getProfile(user);
+  async getRecommendation(user: User, refresh = false): Promise<RecoResponse> {
+    const profile = await this.profileService.getProfile(user, { refresh });
     const models = await this.queryModels(profile.style_label);
 
     if (models.length === 0) {

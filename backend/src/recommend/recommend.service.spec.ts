@@ -103,6 +103,36 @@ describe('RecommendService', () => {
     });
   });
 
+  describe('getRecommendation — option refresh', () => {
+    function makeServiceWithSpy(): {
+      service: RecommendService;
+      getProfile: jest.Mock;
+    } {
+      const getProfile = jest.fn().mockResolvedValue(makeProfile());
+      const profileSvc = { getProfile } as unknown as ProfileService;
+      return {
+        service: new RecommendService(makeRepo([]), profileSvc),
+        getProfile,
+      };
+    }
+
+    it('propage refresh=true à getProfile', async () => {
+      const { service, getProfile } = makeServiceWithSpy();
+      await service.getRecommendation(makeUser(), true);
+      expect(getProfile).toHaveBeenCalledWith(expect.anything(), {
+        refresh: true,
+      });
+    });
+
+    it('par défaut (sans argument) refresh=false', async () => {
+      const { service, getProfile } = makeServiceWithSpy();
+      await service.getRecommendation(makeUser());
+      expect(getProfile).toHaveBeenCalledWith(expect.anything(), {
+        refresh: false,
+      });
+    });
+  });
+
   describe('getRecommendation — catalogue vide', () => {
     it('renvoie la réponse démo avec les infos du vrai athlète', async () => {
       const result = await makeService([]).getRecommendation(makeUser());

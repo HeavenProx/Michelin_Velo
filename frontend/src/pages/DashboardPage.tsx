@@ -13,6 +13,7 @@ import {
   Mountain,
   Sun,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { StarRating } from "@/components/StarRating";
@@ -20,7 +21,7 @@ import { StoreSection } from "@/components/StoreSection";
 import { usePeers } from "@/hooks/usePeers";
 
 export function DashboardPage() {
-  const { liveData } = useApp();
+  const { liveData, loading, loadLiveData } = useApp();
   const { data: peers } = usePeers();
   const [showStores, setShowStores] = useState(false);
 
@@ -75,15 +76,29 @@ export function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-4 h-4 fill-[#FC4C02]"
-              aria-hidden="true"
-            >
-              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-            </svg>
-            <span className="text-[#FC4C02] font-semibold text-sm">Strava</span>
+          <div className="flex items-center gap-3">
+            {!liveData.isDemo && (
+              <button
+                type="button"
+                onClick={() => loadLiveData(true)}
+                disabled={loading}
+                aria-label="Rafraîchir les données"
+                title="Rafraîchir les données"
+                className="text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              </button>
+            )}
+            <div className="flex items-center gap-1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-4 h-4 fill-[#FC4C02]"
+                aria-hidden="true"
+              >
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+              <span className="text-[#FC4C02] font-semibold text-sm">Strava</span>
+            </div>
           </div>
         </div>
 

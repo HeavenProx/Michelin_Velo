@@ -13,7 +13,7 @@ interface AppContextValue {
   liveData: LiveData | undefined;
   loading: boolean;
   authStatus: AuthStatus;
-  loadLiveData: () => Promise<void>;
+  loadLiveData: (refresh?: boolean) => Promise<void>;
   loadDemoData: () => Promise<void>;
   logout: () => Promise<void>;
   connectStrava: () => void;
@@ -84,8 +84,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function loadLiveData() {
-    const ok = await fetchFromApi("/api/recommend", false);
+  // `refresh=true` force le backend à contourner le cache 12 h (re-pull Strava
+  // + recalcul météo) — utilisé par le bouton « rafraîchir » du dashboard.
+  async function loadLiveData(refresh = false) {
+    const path = refresh ? "/api/recommend?refresh=true" : "/api/recommend";
+    const ok = await fetchFromApi(path, false);
     setAuthStatus(ok ? "authed" : "guest");
   }
 
