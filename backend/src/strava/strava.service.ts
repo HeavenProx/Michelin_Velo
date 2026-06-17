@@ -7,6 +7,7 @@ import type {
   StravaBikeRaw,
   StravaSummaryActivityRaw,
 } from './strava.types';
+import { FIXTURE_ACTIVITIES, FIXTURE_BIKES } from './strava.fixtures';
 
 const STRAVA_ACTIVITIES_URL =
   'https://www.strava.com/api/v3/athlete/activities';
@@ -50,6 +51,11 @@ export class StravaService {
     user: User,
     options: GetActivitiesOptions = {},
   ): Promise<CyclingActivity[]> {
+    if (process.env.USE_STRAVA_FIXTURES === 'true') {
+      this.logger.debug('Fixtures activées : retour des activités de test.');
+      return FIXTURE_ACTIVITIES;
+    }
+
     const { sinceDays = 365, maxActivities = 400 } = options;
     const token = await this.authService.getValidAccessToken(user);
     const after = Math.floor(Date.now() / 1000) - sinceDays * 86_400;
@@ -81,6 +87,11 @@ export class StravaService {
    * Sert à peupler le garage.
    */
   async getAthleteBikes(user: User): Promise<StravaBike[]> {
+    if (process.env.USE_STRAVA_FIXTURES === 'true') {
+      this.logger.debug('Fixtures activées : retour des vélos de test.');
+      return FIXTURE_BIKES;
+    }
+
     const token = await this.authService.getValidAccessToken(user);
     const res = await fetch(STRAVA_ATHLETE_URL, {
       headers: { Authorization: `Bearer ${token}` },

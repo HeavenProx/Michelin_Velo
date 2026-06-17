@@ -23,10 +23,13 @@ export class NotificationService {
   async sendWearAlert(tire: string, wear: number): Promise<boolean> {
     const transporter = this.createTransporter();
 
-    const from = this.config.get<string>('EMAIL_USER') ?? 'noreply@michelin.local';
-    const to   = this.config.get<string>('EMAIL_TO') ?? 'dev@michelin.local';
+    const from =
+      this.config.get<string>('EMAIL_USER') ?? 'noreply@michelin.local';
+    const to = this.config.get<string>('EMAIL_TO') ?? 'dev@michelin.local';
     const date = new Date().toLocaleDateString('fr-FR', {
-      day: 'numeric', month: 'long', year: 'numeric',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     });
 
     try {

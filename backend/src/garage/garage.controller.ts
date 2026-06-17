@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Req,
@@ -14,6 +15,7 @@ import type { Request } from 'express';
 import { AuthenticatedGuard } from '../auth/authenticated.guard';
 import { ReplaceTyreDto } from './dto/replace-tyre.dto';
 import { SetTyreDto } from './dto/set-tyre.dto';
+import { UpdateTyreDateDto } from './dto/update-tyre-date.dto';
 import { GarageService } from './garage.service';
 
 @Controller('api/garage')
@@ -55,6 +57,17 @@ export class GarageController {
   ) {
     if (!req.user) throw new UnauthorizedException();
     return this.garage.replaceTyre(req.user, id, dto);
+  }
+
+  @Patch('tyres/:id/date')
+  @UseGuards(AuthenticatedGuard)
+  updateTyreDate(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTyreDateDto,
+  ) {
+    if (!req.user) throw new UnauthorizedException();
+    return this.garage.updateMountDate(req.user, id, dto.mountedDate);
   }
 
   @Post('sync')
