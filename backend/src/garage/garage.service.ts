@@ -36,6 +36,8 @@ export interface TyreDto {
   wear_percent: number;
   status_label: string;
   explanation: string;
+  age_months: number;
+  age_penalty_percent: number;
 }
 export interface BikeDto {
   id: number;
@@ -211,10 +213,12 @@ export class GarageService {
       wear_percent: score.wearPercent,
       status_label: score.statusLabel,
       explanation: this.buildExplanation(tyre.position, score, profile),
+      age_months: score.ageMonths,
+      age_penalty_percent: score.agePenaltyPercent,
     };
   }
 
-  /** Texte pédagogique : position + terrain (chiffré) + météo/style (habillage). */
+  /** Texte pédagogique : position + terrain (chiffré) + âge + météo/style. */
   private buildExplanation(
     position: TyrePosition,
     score: TyreScore,
@@ -225,7 +229,17 @@ export class GarageService {
       `Pneu ${place} : l'usure tient compte de la charge et de votre terrain.`,
     ];
     if (score.coeffTerrainMoyen > 1.1) {
-      parts.push('Vos sorties hors-asphalte accélèrent l’abrasion.');
+      parts.push("Vos sorties hors-asphalte accélèrent l'abrasion.");
+    }
+    if (score.agePenaltyPercent >= 50) {
+      const years = Math.round(score.ageMonths / 12);
+      parts.push(
+        `Le caoutchouc est posé depuis ${years} ans : il se dessèche et perd en adhérence, indépendamment des kilomètres.`,
+      );
+    } else if (score.agePenaltyPercent > 0) {
+      parts.push(
+        `Le caoutchouc posé depuis ${score.ageMonths} mois commence à vieillir (rigidification légère).`,
+      );
     }
     const rain = Math.round(profile.weather_exposure.rain_percentage ?? 0);
     if (rain >= 20) {
@@ -373,6 +387,8 @@ export class GarageService {
               status_label: 'Bon état',
               explanation:
                 "Pneu avant : l'usure tient compte de la charge et de votre terrain. Style Performance pris en compte.",
+              age_months: 10,
+              age_penalty_percent: 0,
             },
             {
               id: 2,
@@ -382,14 +398,17 @@ export class GarageService {
                 lifetime_km: 8000,
                 price_range: '45 – 58 €',
               },
-              mounted_date: '2025-08-15',
+              // Pneu posé depuis 3 ans et demi → caoutchouc qui sèche (démo vieillissement)
+              mounted_date: '2023-01-10',
               km_used: 1680,
               km_max_adjusted: 4211,
               km_left: 2531,
-              wear_percent: 40,
-              status_label: 'Bon état',
+              wear_percent: 71,
+              status_label: 'À surveiller',
               explanation:
-                "Pneu arrière : l'usure tient compte de la charge et de votre terrain. Style Performance pris en compte.",
+                "Pneu arrière : l'usure tient compte de la charge et de votre terrain. Le caoutchouc posé depuis 41 mois commence à se dessécher (rigidification légère). Style Performance pris en compte.",
+              age_months: 41,
+              age_penalty_percent: 35,
             },
           ],
         },
@@ -413,6 +432,8 @@ export class GarageService {
               km_left: 4180,
               wear_percent: 16,
               status_label: 'Bon état',
+              age_months: 7,
+              age_penalty_percent: 0,
               explanation:
                 'Pneu avant gravel : coefficient terrain mixte appliqué. Vos sorties hors-asphalte sont bien prises en compte.',
             },
@@ -432,6 +453,8 @@ export class GarageService {
               status_label: 'À remplacer',
               explanation:
                 "Pneu arrière gravel : usure critique. L'arrière s'use 1,9× plus vite, et le terrain gravel accélère l'abrasion. Remplacement urgent.",
+              age_months: 12,
+              age_penalty_percent: 0,
             },
           ],
         },
@@ -457,6 +480,8 @@ export class GarageService {
               status_label: 'Neuf',
               explanation:
                 "Pneu avant VTT : très récent, l'usure est minimale. Le compound accrocheur est encore en rodage.",
+              age_months: 4,
+              age_penalty_percent: 0,
             },
             {
               id: 6,
@@ -474,6 +499,8 @@ export class GarageService {
               status_label: 'Bon état',
               explanation:
                 "Pneu arrière VTT spécifique : conçu pour encaisser les chocs en sortie de virage. Usure homogène pour l'instant.",
+              age_months: 4,
+              age_penalty_percent: 0,
             },
           ],
         },

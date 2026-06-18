@@ -1,5 +1,10 @@
 import type { CyclingActivity } from '../strava/strava.types';
-import { computeTyreScore, statusLabel, terrainCoeff } from './garage.wear';
+import {
+  computeAgePenalty,
+  computeTyreScore,
+  statusLabel,
+  terrainCoeff,
+} from './garage.wear';
 
 function act(partial: Partial<CyclingActivity>): CyclingActivity {
   return {
@@ -54,6 +59,24 @@ describe('statusLabel', () => {
   });
 });
 
+describe('computeAgePenalty', () => {
+  it('renvoie 0 dans la période de grâce (≤ 24 mois)', () => {
+    expect(computeAgePenalty(0)).toBe(0);
+    expect(computeAgePenalty(24)).toBe(0);
+  });
+
+  it('calcule la pénalité linéaire entre 24 et 72 mois', () => {
+    expect(computeAgePenalty(48)).toBe(50); // (48-24)/(72-24)*100 = 50
+    expect(computeAgePenalty(36)).toBe(25); // (36-24)/(72-24)*100 = 25
+    expect(computeAgePenalty(60)).toBe(75); // (60-24)/(72-24)*100 = 75
+  });
+
+  it('plafonne à 100 % au-delà de 72 mois', () => {
+    expect(computeAgePenalty(72)).toBe(100);
+    expect(computeAgePenalty(120)).toBe(100);
+  });
+});
+
 describe('computeTyreScore', () => {
   const now = new Date('2025-10-01T00:00:00Z');
 
@@ -91,5 +114,27 @@ describe('computeTyreScore', () => {
     expect(score.kmMaxAdjusted).toBe(0);
     expect(score.wearPercent).toBe(0);
     expect(score.kmLeft).toBe(0);
+  });
+
+  it("intègre la pénalité d'âge dans wearPercent", () => {
+    // Pneu posé il y a 48 mois → pénalité âge 50 %
+    const mountedDate = '2021-10-01';
+    const future = new Date('2025-10-01T00:00:00Z'); // 48 mois après
+    const acts = [act({ distanceKm: 500, startDate: '2022-01-01T08:00:00Z' })];
+    const score = computeTyreScore(acts, 'FRONT', 5000, mountedDate, future);
+    // kmWear = 500/5000*100 = 10 %, agePenalty = 50 % → total = 60 %
+    expect(score.agePenaltyPercent).toBe(50);
+    expect(score.ageMonths).toBe(48);
+    expect(score.wearPercent).toBe(60);
+    expect(score.statusLabel).toBe('À surveiller');
+  });
+
+  it("plafonne wearPercent à 100 même avec km + pénalité d'âge > 100", () => {
+    const mountedDate = '2018-10-01';
+    const future = new Date('2025-10-01T00:00:00Z'); // 84 mois → pénalité 100 %
+    const acts = [act({ distanceKm: 3000, startDate: '2019-01-01T08:00:00Z' })];
+    const score = computeTyreScore(acts, 'FRONT', 5000, mountedDate, future);
+    expect(score.agePenaltyPercent).toBe(100);
+    expect(score.wearPercent).toBe(100);
   });
 });

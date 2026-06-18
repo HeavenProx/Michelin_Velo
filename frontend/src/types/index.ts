@@ -17,7 +17,10 @@ export interface LiveProfile {
   terrain_label: string;
   style_label: string;
   // `rain_percentage: null` = donnée météo indisponible (à distinguer d'un vrai 0 %).
-  weather_exposure: { rain_percentage: number | null; rainy_rides?: number | null };
+  weather_exposure: {
+    rain_percentage: number | null;
+    rainy_rides?: number | null;
+  };
   region: string;
 }
 
@@ -37,7 +40,11 @@ export interface LiveReco {
       terrain_versatility: number;
     };
   };
-  alternatives: Array<{ name: string; match_score: number; description?: string }>;
+  alternatives: Array<{
+    name: string;
+    match_score: number;
+    description?: string;
+  }>;
 }
 
 export interface LiveData {
@@ -65,7 +72,12 @@ export interface Review {
   rating: number;
   text: string;
   date: string;
-  criteria: { grip: number; durabilite: number; confort: number; anticrv: number };
+  criteria: {
+    grip: number;
+    durabilite: number;
+    confort: number;
+    anticrv: number;
+  };
 }
 
 export interface GarageTyre {
@@ -79,6 +91,8 @@ export interface GarageTyre {
   wear_percent: number;
   status_label: string;
   explanation: string;
+  age_months: number;
+  age_penalty_percent: number;
 }
 
 export interface GarageBike {
