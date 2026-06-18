@@ -16,6 +16,7 @@ interface AppContextValue {
   loadLiveData: (refresh?: boolean) => Promise<void>;
   loadDemoData: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<boolean>;
   connectStrava: () => void;
   wearAlerts: WearAlert[];
   alertCount: number;
@@ -106,6 +107,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     emailedTires.current.clear();
   }
 
+  /**
+   * Supprime définitivement le compte côté backend (profil + vélos + pneus en
+   * cascade) puis réinitialise l'état local. Renvoie `true` en cas de succès.
+   */
+  async function deleteAccount(): Promise<boolean> {
+    try {
+      const r = await fetch("/auth/account", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await r.json().catch(() => ({ success: r.ok }));
+      if (!data.success) return false;
+    } catch {
+      return false;
+    }
+    setLiveData(undefined);
+    setAuthStatus("guest");
+    setWearAlerts([]);
+    emailedTires.current.clear();
+    return true;
+  }
+
   function connectStrava() {
     window.location.href = "/auth/strava";
   }
@@ -139,7 +162,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
-        liveData, loading, authStatus, loadLiveData, loadDemoData, logout, connectStrava,
+        liveData, loading, authStatus, loadLiveData, loadDemoData, logout, deleteAccount, connectStrava,
         wearAlerts, alertCount, triggerWearAlert, dismissWearAlert,
       }}
     >

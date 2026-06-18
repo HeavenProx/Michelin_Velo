@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink, Navigate, useNavigate } from "react-router";
-import { User, Cog, Bell, Star, LogOut, Loader2 } from "lucide-react";
+import { User, Cog, Bell, Star, LogOut, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
 const NAV_ITEMS = [
@@ -11,9 +11,15 @@ const NAV_ITEMS = [
 ];
 
 export function AppLayout() {
-  const { liveData, loading, authStatus, connectStrava, logout, alertCount } = useApp();
+  const { liveData, loading, authStatus, connectStrava, logout, deleteAccount, alertCount } = useApp();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"logout" | "delete">("logout");
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const DELETE_KEYWORD = "SUPPRIMER";
 
   if (loading || authStatus === "checking") {
     return (
@@ -30,9 +36,30 @@ export function AppLayout() {
     return <Navigate to="/" replace />;
   }
 
+  function closeModal() {
+    if (deleting) return;
+    setShowLogoutModal(false);
+    setModalMode("logout");
+    setConfirmText("");
+    setDeleteError(null);
+  }
+
   async function handleLogout() {
     await logout();
     navigate("/", { replace: true });
+  }
+
+  async function handleDeleteAccount() {
+    if (confirmText !== DELETE_KEYWORD) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const ok = await deleteAccount();
+    if (ok) {
+      navigate("/", { replace: true });
+    } else {
+      setDeleting(false);
+      setDeleteError("La suppression a échoué. Réessaie dans un instant.");
+    }
   }
 
   return (
@@ -114,34 +141,98 @@ export function AppLayout() {
         </div>
       </nav>
 
-      {/* Modal confirmation déconnexion */}
+      {/* Modal confirmation déconnexion / suppression de compte */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowLogoutModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
           <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl">
-            <div className="flex flex-col items-center text-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
-                <LogOut size={22} className="text-red-500" />
-              </div>
-              <h2 className="font-bold text-lg text-gray-900">Se déconnecter ?</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Vous serez redirigé vers la page d&apos;accueil. Vos données Strava devront être rechargées à la prochaine connexion.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={() => { setShowLogoutModal(false); handleLogout(); }}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-              >
-                Se déconnecter
-              </button>
-            </div>
+            {modalMode === "logout" ? (
+              <>
+                <div className="flex flex-col items-center text-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                    <LogOut size={22} className="text-red-500" />
+                  </div>
+                  <h2 className="font-bold text-lg text-gray-900">Se déconnecter ?</h2>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Vous serez redirigé vers la page d&apos;accueil. Vos données Strava devront être rechargées à la prochaine connexion.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeModal}
+                    className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => { setShowLogoutModal(false); handleLogout(); }}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+
+                {/* Zone de danger */}
+                <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+                  <button
+                    onClick={() => { setModalMode("delete"); setDeleteError(null); }}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                    Supprimer définitivement mon compte
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center text-center gap-3 mb-5">
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                    <AlertTriangle size={22} className="text-red-600" />
+                  </div>
+                  <h2 className="font-bold text-lg text-gray-900">Supprimer votre compte ?</h2>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Cette action est <span className="font-semibold text-red-600">irréversible</span>. Votre profil, vos vélos et tout l&apos;historique de vos pneus seront définitivement supprimés.
+                  </p>
+                </div>
+
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                  Tapez <span className="font-bold text-gray-800">{DELETE_KEYWORD}</span> pour confirmer
+                </label>
+                <input
+                  type="text"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  disabled={deleting}
+                  autoFocus
+                  spellCheck={false}
+                  autoComplete="off"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent disabled:opacity-60"
+                  placeholder={DELETE_KEYWORD}
+                />
+
+                {deleteError && (
+                  <p className="mt-2 text-xs text-red-600">{deleteError}</p>
+                )}
+
+                <div className="flex gap-3 mt-5">
+                  <button
+                    onClick={() => { setModalMode("logout"); setConfirmText(""); setDeleteError(null); }}
+                    disabled={deleting}
+                    className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors disabled:opacity-60"
+                  >
+                    ← Retour
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={confirmText !== DELETE_KEYWORD || deleting}
+                    className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                    {deleting ? "Suppression…" : "Supprimer"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
