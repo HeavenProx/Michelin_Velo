@@ -36,10 +36,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [liveData, setLiveData]     = useState<LiveData | undefined>(undefined);
   const [loading, setLoading]       = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
-  const [wearAlerts, setWearAlerts] = useState<WearAlert[]>([]);
+  const [wearAlerts, setWearAlerts] = useState<WearAlert[]>(() => {
+    try {
+      const stored = localStorage.getItem("michelin_wear_alerts");
+      return stored ? (JSON.parse(stored) as WearAlert[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Ref pour éviter les doubles envois d'email (React strict-mode / re-renders)
   const emailedTires = useRef<Set<string>>(new Set());
+
+  // Persiste les alertes (actives + dismissées) pour survivre aux rechargements
+  useEffect(() => {
+    localStorage.setItem("michelin_wear_alerts", JSON.stringify(wearAlerts));
+  }, [wearAlerts]);
 
   const alertCount = wearAlerts.filter((a) => !a.dismissed).length;
 
@@ -105,6 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthStatus("guest");
     setWearAlerts([]);
     emailedTires.current.clear();
+    localStorage.removeItem("michelin_wear_alerts");
   }
 
   /**
@@ -126,6 +139,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthStatus("guest");
     setWearAlerts([]);
     emailedTires.current.clear();
+    localStorage.removeItem("michelin_wear_alerts");
     return true;
   }
 
@@ -135,7 +149,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function triggerWearAlert(tire: string, wear: number) {
     setWearAlerts((prev) => {
-      if (prev.some((a) => a.tire === tire && !a.dismissed)) return prev;
+      // Ne pas recréer si une alerte (active ou acquittée) existe déjà pour ce pneu
+      if (prev.some((a) => a.tire === tire)) return prev;
       return [
         ...prev,
         { id: `${tire}-${Date.now()}`, tire, wear, date: todayLabel(), dismissed: false },

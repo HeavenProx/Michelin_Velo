@@ -13,11 +13,11 @@ export function AlertePage() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTire, setReviewTire]           = useState("");
 
-  const activeWearAlerts = wearAlerts.filter((a) => !a.dismissed);
-  const alerts           = alertsData?.alerts   ?? [];
-  const reminders        = alertsData?.reminders ?? [];
+  const activeWearAlerts   = wearAlerts.filter((a) => !a.dismissed);
+  const dismissedWearAlerts = wearAlerts.filter((a) => a.dismissed);
+  const reminders           = alertsData?.reminders ?? [];
 
-  const isEmpty = activeWearAlerts.length === 0 && alerts.length === 0 && reminders.length === 0;
+  const isEmpty = activeWearAlerts.length === 0 && dismissedWearAlerts.length === 0 && reminders.length === 0;
 
   function openReview(tire: string) {
     setReviewTire(tire);
@@ -126,50 +126,52 @@ export function AlertePage() {
         </div>
       )}
 
-      {/* ── Historique d’alertes ── */}
-      {!isEmpty && <div>
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400 mb-3">
-          {activeWearAlerts.length > 0 ? "Historique" : "Alertes d’usure"}
-        </p>
-        <div className="space-y-3">
-          {alerts.map((alert, i) => {
-            const key      = `demo-${i}`;
-            const expanded = expandedIdx === key;
-            return (
-              <div key={i} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => setExpandedIdx(expanded ? null : key)}
-                  className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle size={16} className="text-red-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-gray-900">{alert.tire}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Usure <span className="text-red-500 font-semibold">{alert.wear}%</span>
-                      {" · "}{alert.date}
-                    </p>
-                  </div>
-                  <ChevronRight
-                    size={16}
-                    className={`text-gray-400 flex-shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
-                  />
-                </button>
+      {/* ── Historique d’alertes (alertes acquittées) ── */}
+      {dismissedWearAlerts.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400 mb-3">
+            Historique
+          </p>
+          <div className="space-y-3">
+            {dismissedWearAlerts.map((alert) => {
+              const key      = `hist-${alert.id}`;
+              const expanded = expandedIdx === key;
+              return (
+                <div key={alert.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                  <button
+                    onClick={() => setExpandedIdx(expanded ? null : key)}
+                    className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle size={16} className="text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-gray-700">{alert.tire}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Usure <span className="font-semibold">{alert.wear}%</span>
+                        {" · "}{alert.date}
+                      </p>
+                    </div>
+                    <ChevronRight
+                      size={16}
+                      className={`text-gray-400 flex-shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
+                    />
+                  </button>
 
-                {expanded && (
-                  <div className="border-t border-gray-100">
-                    <StoreSection />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  {expanded && (
+                    <div className="border-t border-gray-100">
+                      <StoreSection />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>}
+      )}
 
       {/* ── Rappels avis ── */}
-      {!isEmpty && <div>
+      {reminders.length > 0 && <div>
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400 mb-3">Rappels avis</p>
         <div className="space-y-3">
           {reminders.map((r, i) => (
